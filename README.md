@@ -1,3 +1,5 @@
+<img src="https://github.com/FLOCK4H/Cobra/blob/main/imgs/cobra_banner.png" />
+
 # Cobra
 
 Cobra composes of 3 parts:
@@ -5,7 +7,7 @@ Cobra composes of 3 parts:
 - CobraNET
 - CobraWallets
 
-Generally, after setting up Cobra properly the features are as present:
+Generally, after setting up Cobra properly the features are:
 - Generating Wallets, Grinding Custom Wallets
 - Buying, selling on supported markets
 - Detecting mint's market and pool address
