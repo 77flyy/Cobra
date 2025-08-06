@@ -2,6 +2,19 @@
 
 # Cobra
 
+**Supported Solana Markets:**
+
+1. Raydium CLMM
+2. Meteora DLMM
+3. PumpFun
+4. PumpSwapAMM
+5. MeteoraDAMM v1
+6. MeteoraDAMM v2
+7. Meteora Dynamic Bonding Curve
+8. Raydium CPMM
+9. Raydium AMM V4
+10. Raydium Launchlab
+
 Cobra composes of 3 parts:
 - CobraRouter
 - CobraNET
