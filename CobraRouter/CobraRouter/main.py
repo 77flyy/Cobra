@@ -1,18 +1,18 @@
 import asyncio, sys
 import logging
 import aiohttp
-try: from CobraRouter.CobraRouter.router._swaps import CobraSwaps
+try: from CobraRouter.CobraRouter.router._swaps import CobraSwaps # type: ignore
 except: from .router._swaps import CobraSwaps
-try: from CobraRouter.CobraRouter.router import Router
+try: from CobraRouter.CobraRouter.router import Router # type: ignore
 except: from .router import Router
-try: from CobraRouter.CobraRouter.router import Cleaner
+try: from CobraRouter.CobraRouter.router import Cleaner # type: ignore
 except: from .router import Cleaner
 from solders.keypair import Keypair # type: ignore
 from solders.message import VersionedMessage # type: ignore
 from solana.rpc.async_api import AsyncClient
-try: from CobraRouter.CobraRouter.router.libutils.colors import *
+try: from CobraRouter.CobraRouter.router.libutils.colors import * # type: ignore
 except: from .router.libutils.colors import *
-try: from CobraRouter.CobraRouter.detect import CobraDetector
+try: from CobraRouter.CobraRouter.detect import CobraDetector # type: ignore
 except: from .detect import CobraDetector
 
 for handler in logging.root.handlers[:]:

@@ -96,19 +96,8 @@ class CobraNET:
         self.rate[uid] = (t, n + 1)
         if n >= LIMIT:
             return (False, "rate-limit")
-        ok  = await self.is_member(uid)
-        if not ok:
-            return (False, "not-member")
         
         return (True, "success")
-
-    async def is_member(self, uid: int):
-        try:
-            #dummy function
-            return True
-        except TelegramError:
-            traceback.print_exc()
-            return False
 
     async def send_message(self, cid: int, txt: str, **kwargs):
         try:
@@ -377,9 +366,6 @@ class CobraNET:
         if let[1] == "rate-limit":
             logging.info(f"User {u.effective_chat.username} ({u.effective_chat.id}) possible violation of rate limit.")
             return
-        elif let[1] == "not-member":
-            await self.send_retry_prompt(u.effective_chat.id)
-            return
 
         q   = u.callback_query
         uid = q.from_user.id
@@ -441,10 +427,6 @@ class CobraNET:
         # BURN callbacks
         elif data == "menu_burn_tokens":
             await self.handle_burn_tokens(uid)
-
-        # RETRY (membership)
-        elif data == "retry_access":
-            await self.retry_callback(u, c)
 
     async def handle_burn_tokens(self, uid: int):
         self.awaiting[uid] = "burn_tokens"
@@ -639,43 +621,6 @@ class CobraNET:
             )
         except BadRequest:
             pass
-
-    async def send_retry_prompt(self, cid: int):
-        keyboard = InlineKeyboardMarkup(
-            [[InlineKeyboardButton("🔄 Retry", callback_data="retry_access")]]
-        )
-        await self.send_message(
-            cid,
-            "<b>Welcome to Cobra 🐍</b>\n\n"
-            "<b>⚠️ You must be a member of "
-            f"{GROUP_CHAT_RETRY_MESSAGE} to gain access.</b>",
-            reply_markup=keyboard,
-        )
-
-    async def retry_callback(self, u: Update, c: ContextTypes.DEFAULT_TYPE):
-        q = u.callback_query
-        await q.answer()
-        uid = q.from_user.id
-
-        if await self.is_member(uid):
-            await self.db_hook.cache_user(str(uid), str(q.from_user.username))
-            try:
-                # Replace the old message so the user can’t press Retry again
-                await q.edit_message_text("<b>✅ Access granted</b>")
-                await self.handle_wallet(uid)
-                await self.show_menu(uid)
-            except BadRequest:
-                pass # message was already edited / deleted
-        else:
-            # Still not a member – just refresh the button so they can try again
-            try:
-                await q.edit_message_reply_markup(
-                    reply_markup=InlineKeyboardMarkup(
-                        [[InlineKeyboardButton("🔄 Retry (again)", callback_data="retry_access")]]
-                    )
-                )
-            except BadRequest:
-                pass
 
     async def process_buy(self, uid: int, cmd: str):
         try:
@@ -996,9 +941,6 @@ class CobraNET:
             if let[1] == "rate-limit":
                 logging.info(f"User {u.effective_chat.username} ({u.effective_chat.id}) possible violation of rate limit.")
                 return
-            elif let[1] == "not-member":
-                await self.send_retry_prompt(u.effective_chat.id)
-                return
             elif not let[0]:
                 return
 
@@ -1028,9 +970,6 @@ class CobraNET:
 
             if cmd.startswith("/"):
                 await self.handle_command(u, c)
-            elif cmd == "retry_access":
-                logging.info(f"User {u.effective_chat.username} ({u.effective_chat.id}) requested to retry access.")
-                await self.retry_callback(u, c)
         except Exception as e:
             uid  = u.effective_chat.id
             await self.send_message(uid, f"<b>Unexpected error happened, please contact support or try again.</b>")
