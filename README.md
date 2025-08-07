@@ -1,15 +1,15 @@
 <img src="https://github.com/FLOCK4H/Cobra/blob/main/imgs/cobra_banner.png" />
 
 > [!IMPORTANT]
-> To keep the open-source environment healthy, there are no fees, nor ads included in the repo.
+> This software is free of any charge & open-source, there are no fees, nor ads included in the repo.
 > </br>
 > Consider feeding the Cobra if the project comes useful.
 > </br>
-> Wallet: **FL4CKfetEWBMXFs15ZAz4peyGbCuzVaoszRKcoVt3WfC**
+> Wallet: `FL4CKfetEWBMXFs15ZAz4peyGbCuzVaoszRKcoVt3WfC`
 
 # Cobra
 
-**Off-chain DeX router on Solana. Can grind a custom vanity key (e.g. `FL4CKfetEWBMXFs15ZAz4peyGbCuzVaoszRKcoVt3WfC`), find a market for a mint to swap on, find a pool with sufficient liquidity, swap on supported markets below, and more...** 
+**Off-chain DeX router on Solana. Can grind a custom vanity key (e.g. `FL4CKfetEWBMXFs15ZAz4peyGbCuzVaoszRKcoVt3WfC`), find a market for a mint to swap on, find a pool with sufficient liquidity, swap on supported markets, and more...** 
 
 **Supported Solana Markets:**
 
@@ -37,14 +37,12 @@ Cobra composes of 3 parts:
 
 <img width="1075" height="447" alt="image" src="https://github.com/user-attachments/assets/58dc5704-fcf7-4272-a34d-15785b91cf4f" />
 
-Generally, after setting up Cobra properly the features are:
+Generally, after setting up Cobra properly, the features are:
 - Generating Wallets, Grinding Custom Wallets
-- Buying, selling on supported markets
+- Buying, selling on supported markets (& in Pump.fun AMM - creating new pools)
 - Detecting mint's market and pool address
 - Fetching pool's states/ keys (for developers)
-- Constructing transactions manually (for developers)
-
-**Even if you feel like a rookie when it comes to Solana - Don't worry, the setup is quick.**
+- Interfacing with supported markets using available methods (for developers)
 
 # Setup
 
