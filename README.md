@@ -71,7 +71,9 @@ PRIORITY_FEE_LEVEL="high" # Set if using CLI | "low", "medium", "high", "turbo"
 
 `$ python main.py`
 
-4. (Optional) Install CobraRouter as a module (for your projects):
+**That's it, if you ever want to develop with cobra module, just follow below.**
+
+4. (Optional) Install CobraRouter as a module:
 
 ```
   $ cd CobraRouter
