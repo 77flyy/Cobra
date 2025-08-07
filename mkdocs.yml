@@ -1,0 +1,15 @@
+site_name: Cobra Docs
+theme:
+  name: material
+  features:
+    - navigation.instant
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            separate_signature: true
+nav:
+  - Home: index.md
