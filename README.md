@@ -33,6 +33,10 @@ Cobra composes of 3 parts:
 - CobraNET
 - CobraWallets
 
+**..and a CLI which is `main.py`, a Command Line Interface wrapper around CobraRouter**
+
+<img width="1075" height="447" alt="image" src="https://github.com/user-attachments/assets/58dc5704-fcf7-4272-a34d-15785b91cf4f" />
+
 Generally, after setting up Cobra properly the features are:
 - Generating Wallets, Grinding Custom Wallets
 - Buying, selling on supported markets
@@ -53,12 +57,14 @@ $ pip install -r req.txt
 
 <h4>If you're a developer trying to use any of the modules, skip to point 4</h4>
 
-2. Configure the `.env` file (only if you will be using CLI):
+2. Configure the `secrets.env` file (only if you will be using CLI):
 
 > [!TIP]
 > Required are: `HTTP_RPC`, `HELIUS_API_KEY` and `PRIVATE_KEY`.</br> 
 > Helius can be free tier.</br>
 > **Current fastest HTTP RPC Provider:** [Apewise](https://apewise.org)
+
+**In `secrets.env` you can control `SLIPPAGE`, which is 1..100 range, and `PRIORITY_FEE_LEVEL` which is a String and options are: `low`, `medium`, `high`, `turbo`.**
 
 ```
 RUN_AS_CLI=True
