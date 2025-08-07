@@ -13,4 +13,9 @@ plugins:
             show_root_heading: true
             separate_signature: true
 nav:
-  - Home: index.md
+  - General:
+      - Home: index.md
+      - Overview: general/overview.md
+  - First steps:
+      - Installation: first/installation.md
+      - Quick start: first/quickstart.md
