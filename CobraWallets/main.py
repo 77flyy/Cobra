@@ -17,6 +17,7 @@ class CobraWallets:
         self.grinder = Grinder()
         self.pool = db_pool
         self.is_cli = is_cli
+        self.grind_custom_wallet = self.grinder.grind_custom_wallet
 
     async def create_wallet(self, uid: str = None) -> tuple[str, str] | None:
         # Returns: (pubkey, privkey)

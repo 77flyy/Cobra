@@ -25,7 +25,7 @@ RENT_EXEMPT = 2039280
 try:
     from CobraNET.db_hook import TGDBHook
     from CobraWallets import CobraWallets
-    from CobraRouter.CobraRouter import CobraRouter 
+    from CobraRouter import CobraRouter 
     from colors import *
 except ImportError:
     from .db_hook import TGDBHook
@@ -49,11 +49,6 @@ BLACKLIST_CHAT_IDS = [
 ]
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-GROUP_CHAT_ID = os.getenv("GROUP_CHAT_ID") # If user trying to use the bot is not in this group, the bot will not be able to send messages to them
-if GROUP_CHAT_ID.lstrip("-").isdigit():
-    GROUP_CHAT_ID = int(GROUP_CHAT_ID) if GROUP_CHAT_ID.startswith("-") else int("-100" + GROUP_CHAT_ID)
-GROUP_CHAT_RETRY_MESSAGE = os.getenv("GROUP_CHAT_RETRY_MESSAGE")
-
 WINDOW = 10
 LIMIT  = 5
 
@@ -109,9 +104,8 @@ class CobraNET:
 
     async def is_member(self, uid: int):
         try:
-            m = await self.application.bot.get_chat_member(GROUP_CHAT_ID, uid)
-            ok = m.status in ALLOWED
-            return ok
+            #dummy function
+            return True
         except TelegramError:
             traceback.print_exc()
             return False

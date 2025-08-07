@@ -11,6 +11,18 @@ except: from .colors import *;
 
 logging.basicConfig(level=logging.INFO)
 
+BASE58_ALPHABET: set[str] = set(
+    "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+)
+
+def validate_base58_fragment(fragment: str) -> None:
+    """Raises ValueError if the string contains characters outside the Base58 alphabet."""
+    invalid = {ch for ch in fragment if ch not in BASE58_ALPHABET}
+    if invalid:
+        raise ValueError(
+            f"Invalid characters for Base58: {', '.join(sorted(invalid))}"
+        )
+
 class Grinder:
     def __init__(self):
         self.q = mp.Queue()
@@ -39,6 +51,7 @@ class Grinder:
 
     def grind_custom_wallet(self, includes: str = "CB") -> tuple[str, str] | tuple[None, None]:
         try:
+            validate_base58_fragment(includes)
             n_workers = mp.cpu_count() - 1
 
             logging.info(f"[*] Spinning up {n_workers} workers to grind for ‘...{includes}’")
@@ -65,6 +78,10 @@ class Grinder:
 
             logging.info(f"[+] Found {addr} in {elapsed:.1f}s")
             return addr, secret
+
+        except ValueError as ve:
+            logging.error(f"[-] Grinder aborted: {ve}")
+            return None, None
 
         except Exception as e:
             logging.error(f"[-] Grinder failed: {e}")
