@@ -5,6 +5,7 @@ theme:
     - navigation.instant
 plugins:
   - search
+  - autorefs
   - mkdocstrings:
       handlers:
         python:
