@@ -1,11 +1,15 @@
 <img src="https://github.com/FLOCK4H/Cobra/blob/main/imgs/cobra_banner.png" />
 
 > [!IMPORTANT]
-> To keep the open-source environment healthy, there are no fees, nor ads included in the repo. Consider feeding Cobra if the project comes useful.
+> To keep the open-source environment healthy, there are no fees, nor ads included in the repo.
+> </br>
+> Consider feeding the Cobra if the project comes useful.
 > </br>
 > Wallet: **FL4CKfetEWBMXFs15ZAz4peyGbCuzVaoszRKcoVt3WfC**
 
 # Cobra
+
+**Off-chain DeX router on Solana. Can grind a custom vanity key (e.g. `FL4CKfetEWBMXFs15ZAz4peyGbCuzVaoszRKcoVt3WfC`), find a market for a mint to swap on, find a pool with sufficient liquidity, swap on supported markets below, and more...** 
 
 **Supported Solana Markets:**
 
@@ -105,6 +109,11 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
+# CobraNET
+
+CobraNET is a Telegram wrapper around the CobraRouter and CobraWallets, and allows you to host your own Dex Router.
+
 
 ## Contact & Support
 
