@@ -54,7 +54,7 @@ $ pip install -r req.txt
 ```
 
 <details>
-    <summary><b>– I am a developer</b></summary>
+    <summary><b>🖱️ I am a developer</b></summary>
 
 ## 2. Install [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) module:
     
@@ -139,7 +139,7 @@ More in the documentation (_In progress_).
 
 <details>
 
-<summary><b>– I am a trader</b></summary>
+<summary><b>🖱️ I am a trader</b></summary>
 
 ## 2. Configure the `secrets.env` file:
 
