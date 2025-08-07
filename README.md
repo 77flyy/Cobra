@@ -48,16 +48,101 @@ Generally, after setting up Cobra properly the features are:
 
 # Setup
 
-1. Download the repository and install the required modules
+## 1. Download the repository and install the required modules
 
 ```
 $ git clone https://github.com/FLOCK4H/Cobra
 $ pip install -r req.txt
 ```
 
-<h4>If you're a developer trying to use any of the modules, skip to point 4</h4>
+<details>
+    <summary><b>– I am a developer</b></summary>
 
-2. Configure the `secrets.env` file (**only if you will be using CLI**):
+## 2. Install [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) module:
+    
+```bash
+$ cd CobraRouter
+$ pip install .
+```
+
+Using the `Router(ctx: AsyncClient, session: aiohttp.ClientSession)` class requires the `secrets.env` file that includes:
+
+`secrets.env`
+```
+HELIUS_API_KEY="your-helius-free-or-not-api-key" 
+```
+
+<details>
+    <summary><b> (click) Alternatively, you can hardcode the helius key into the module and reinstall.</b></summary>
+
+To hardcode the key change the line `HELIUS_API_KEY = os.getenv("HELIUS_API_KEY")` to `HELIUS_API_KEY = "your-api-key-here"`
+
+`CobraRouter/router/libutils/_helius_api.py`
+```python
+import asyncio
+...
+
+load_dotenv("secrets.env") # will walk down to find the API key, if doesn't work for some reason, please manually set the API key below
+
+# HELIUS_API_KEY = "5exxxxx-your-api-key-here"
+HELIUS_API_KEY = os.getenv("HELIUS_API_KEY") # <- Change to string. e.g. "helius-api-key-here"
+
+if not HELIUS_API_KEY:
+    raise ValueError("HELIUS_API_KEY is not set in secrets.env | Or we couldn't find it, please manually set the API key in `CobraRouter/router/libutils/_helius_api.py`")
+```
+
+To reinstall:
+
+```bash
+# You have to be inside CobraRouter folder
+
+$ pip uninstall cobra-router -y
+$ pip install .
+```
+    
+</details>
+
+**Example usage:**
+
+```python
+from CobraRouter.detect import CobraDetector
+from CobraRouter.router import Router
+import asyncio
+from solana.rpc.async_api import AsyncClient
+import aiohttp
+
+async def main():
+    client = AsyncClient("https://api.apewise.org/rpc?api-key=")
+    session = aiohttp.ClientSession()
+    router = Router(client, session)
+    detector = CobraDetector(router, "https://api.apewise.org/rpc?api-key=")
+    detect = await detector._detect("9R1pCPM7GRr9F4gk978LqBQiPKfYStbZKc5iKV4imoon")
+    print(detect)
+    await client.close()
+    await session.close()
+    await router.close()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+**Example output:**
+
+```bash
+PS C:\Users\swear\Desktop> python .\test.py
+BMBcZ9GWMCi9HaCE7BagrLxakzffy6fAGdEpihLRfVPw
+[CobraRouter] Route winner (?): 675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8 -> BMBcZ9GWMCi9HaCE7BagrLxakzffy6fAGdEpihLRfVPw
+('675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8', 'BMBcZ9GWMCi9HaCE7BagrLxakzffy6fAGdEpihLRfVPw')
+```
+
+More in the documentation (_In progress_).
+
+</details>
+
+<details>
+    <summary><b>– I am a trader</b></summary>
+
+## 2. Configure the `secrets.env` file:
 
 > [!TIP]
 > Required are: `HTTP_RPC`, `HELIUS_API_KEY` and `PRIVATE_KEY`.</br> 
@@ -80,69 +165,11 @@ SLIPPAGE=30 # Set if using CLI
 PRIORITY_FEE_LEVEL="high" # Set if using CLI | "low", "medium", "high", "turbo"
 ```
 
-3. Run the CLI
+## 3. Run the CLI
 
 `$ python main.py`
 
-**That's it, if you ever want to develop with cobra module, just follow below.**
-
-4. (Optional) Install CobraRouter as a module:
-
-> [!TIP]
-> [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) doesn't need any `.env` file, but you have to supply a Helius api key to use `getAsset` from Helius Free API.
-
-**Hardcode Helius API Key below, or create a `secrets.env` where you run application. To hardcode the key change the line `HELIUS_API_KEY = os.getenv("HELIUS_API_KEY")` to `HELIUS_API_KEY = "your-api-key-here"`, proceed with installing if you hardcoded the key:**
-
-`CobraRouter/router/libutils/_helius_api.py`
-```python
-import asyncio
-import aiohttp
-import json
-import logging
-import os
-from dotenv import load_dotenv
-
-load_dotenv("secrets.env") # will walk down to find the API key, if doesn't work for some reason, please manually set the API key below
-
-# HELIUS_API_KEY = "5exxxxx-your-api-key-here"
-HELIUS_API_KEY = os.getenv("HELIUS_API_KEY")
-
-if not HELIUS_API_KEY:
-    raise ValueError("HELIUS_API_KEY is not set in secrets.env | Or we couldn't find it, please manually set the API key in `CobraRouter/router/libutils/_helius_api.py`")
-```
-
-`or via secrets.env`
-```dotnet
-HELIUS_API_KEY="your-api-key-here"
-```
-
-**Install the [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) module using `setup.py`:**
-
-```
-  $ cd CobraRouter
-  $ pip install .
-```
-
-**Example usage:**
-
-```
-from CobraRouter.detect import CobraDetector
-from CobraRouter.router import Router
-import asyncio
-from solana.rpc.async_api import AsyncClient
-import aiohttp
-
-async def main():
-    client = AsyncClient("https://api.apewise.org/rpc?api-key=")
-    session = aiohttp.ClientSession()
-    router = Router(client, session)
-    detector = CobraDetector(router, "https://api.apewise.org/rpc?api-key=")
-    detect = await detector._detect("HCN3NazHfBKRDP8EqCmwjZKXtd71HXcXVmXur6VyXm5P")
-    print(detect)
-
-if __name__ == "__main__":
-    asyncio.run(main())
-```
+</details>
 
 # CobraNET
 
