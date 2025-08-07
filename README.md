@@ -17,6 +17,8 @@
 
 Find their implementations here: [CobraRouter/router](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router)
 
+<h5>Every market implementation is a self-contained library, meaning you can copy a specific folder to your project and just import what you need.</h5>
+
 Cobra composes of 3 parts:
 - CobraRouter
 - CobraNET
