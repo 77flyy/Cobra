@@ -169,6 +169,11 @@ Run the CobraNET:
 
 `$ python main.py`
 
+Test your bot by entering `/start` inside the conversation.
+
+<img width="528" height="757" alt="image" src="https://github.com/user-attachments/assets/8af7dd6b-cc97-4ee1-9ed3-6abd5a13c163" />
+
+
 ## Contact & Support
 
 **Discord: [FLOCK4H.CAVE](https://discord.gg/thREUECv2a)**, **Telegram: [FLOCK4H.CAVE](https://t.me/flock4hcave)**
