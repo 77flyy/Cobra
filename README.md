@@ -1,7 +1,7 @@
 <img src="https://github.com/FLOCK4H/Cobra/blob/main/imgs/cobra_banner.png" />
 
 > [!IMPORTANT]
-> This software is free of any charge & open-source, there are no fees, nor ads included in the repo.
+> This software is open-source & free of any charge, there are no fees, nor ads included in the repo.
 > </br>
 > Consider feeding the Cobra if the project comes useful.
 > </br>
@@ -191,10 +191,12 @@ For database operations you will need PostgreSQL installed: [PostgreSQL](https:/
 
 Initialize the database:
 
-`$ cd Cobra`
-`$ python database.py`
+```
+$ cd Cobra
+$ python database.py
+```
 
-Run the CobraNET:
+Run the Cobra with Telegram support:
 
 `$ python main.py`
 
