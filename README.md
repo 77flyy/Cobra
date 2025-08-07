@@ -13,18 +13,18 @@
 
 **Supported Solana Markets:**
 
-1. Raydium CLMM
-2. Meteora DLMM
-3. PumpFun
-4. PumpSwapAMM
-5. MeteoraDAMM v1
-6. MeteoraDAMM v2
-7. Meteora Dynamic Bonding Curve
-8. Raydium CPMM
-9. Raydium AMM V4
-10. Raydium Launchlab
+1. [Raydium CLMM](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/raydiumswap/clmm)
+2. [Meteora DLMM](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/meteora_dlmm)
+3. [PumpFun](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/pump_fun)
+4. [PumpSwapAMM](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/PumpSwapAMM)
+5. [MeteoraDAMM v1](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/meteora_damm_v1)
+6. [MeteoraDAMM v2](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/meteora_damm_v2)
+7. [Meteora Dynamic Bonding Curve](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/meteoraDBC)
+8. [Raydium CPMM](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/raydiumswap/cpmm)
+9. [Raydium AMM V4](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/raydiumswap/amm_v4)
+10. [Raydium Launchlab](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/raydiumswap/launchlab)
 
-Find their implementations here: [CobraRouter/router](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router)
+Clink any market to see their respective implementations, or find them here: [CobraRouter/router](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router)
 
 <h5>Every market implementation is a self-contained library, meaning you can copy a specific folder to your project and just import what you need.</h5>
 
