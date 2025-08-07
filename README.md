@@ -42,7 +42,7 @@ $ git clone https://github.com/FLOCK4H/Cobra
 $ pip install -r req.txt
 ```
 
-<h3>If you're a developer trying to any of the modules, skip this part</h3>
+<h4>If you're a developer trying to use any of the modules, skip to point 4</h4>
 
 2. Configure the `.env` file (only if you will be using CLI):
 
