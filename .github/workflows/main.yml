@@ -1,9 +1,6 @@
-# .github/workflows/docs.yml
 name: Build & Deploy MkDocs
-
 on:
-  push:
-    branches: [ "main" ]
+  push: { branches: [ "main" ] }
   workflow_dispatch:
 
 permissions:
@@ -17,14 +14,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+        with: { python-version: '3.12' }
       - run: |
           pip install -r requirements-docs.txt
           mkdocs build --strict
-      - uses: actions/upload-pages-artifact@v2
-        with:
-          path: site
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site }
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -32,5 +27,5 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/deploy-pages@v2
+      - uses: actions/deploy-pages@v4
         id: deployment
