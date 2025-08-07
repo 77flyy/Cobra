@@ -33,7 +33,7 @@ Cobra composes of 3 parts:
 - CobraNET
 - CobraWallets
 
-**..and a CLI which is `main.py`, a Command Line Interface wrapper around [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) and [CobraWallets](https://github.com/FLOCK4H/Cobra/tree/main/CobraWallets/)**
+**and a CLI, a Command Line Interface wrapper around [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) and [CobraWallets](https://github.com/FLOCK4H/Cobra/tree/main/CobraWallets/)**
 
 <img width="1075" height="447" alt="image" src="https://github.com/user-attachments/assets/58dc5704-fcf7-4272-a34d-15785b91cf4f" />
 
