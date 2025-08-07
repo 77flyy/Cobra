@@ -185,6 +185,8 @@ Create `secrets.env` where you run the application, make sure to set:
 ```
 RUN_AS_CLI=False
 BOT_TOKEN=TELEGRAM_BOT_TOKEN_FROM_BOTFATHER
+HTTP_RPC="https://api.apewise.org/rpc?api-key=" # apewise.org -> fastest right now
+HELIUS_API_KEY="your-helius-free-or-not-api-key" 
 ```
 
 For database operations you will need PostgreSQL installed: [PostgreSQL](https://www.postgresql.org/download)
