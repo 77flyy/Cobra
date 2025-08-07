@@ -138,12 +138,12 @@ More in the documentation (_In progress_).
 </details>
 
 <details>
-    <summary><b>– I am a trader</b></summary>
+
+<summary><b>– I am a trader</b></summary>
 
 ## 2. Configure the `secrets.env` file:
 
-> [!TIP]
-> Required are: `HTTP_RPC`, `HELIUS_API_KEY` and `PRIVATE_KEY`.</br> 
+> Required variables are: `RUN_AS_CLI`, `HTTP_RPC`, `HELIUS_API_KEY` and `PRIVATE_KEY`.</br> 
 > Helius can be free tier.</br>
 > **Current fastest HTTP RPC Provider:** [Apewise](https://apewise.org)
 
@@ -166,6 +166,10 @@ PRIORITY_FEE_LEVEL="high" # Set if using CLI | "low", "medium", "high", "turbo"
 ## 3. Run the CLI
 
 `$ python main.py`
+
+
+<img width="913" height="181" alt="image" src="https://github.com/user-attachments/assets/ef98c6ab-86a5-4548-bba2-8d3ad9bdc89a" />
+
 
 </details>
 
