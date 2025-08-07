@@ -1,5 +1,10 @@
 <img src="https://github.com/FLOCK4H/Cobra/blob/main/imgs/cobra_banner.png" />
 
+> [!IMPORTANT]
+> To keep the open-source environment healthy, there are no fees, nor ads included in the repo. Consider feeding Cobra if the project comes useful.
+> </br>
+> **FL4CKfetEWBMXFs15ZAz4peyGbCuzVaoszRKcoVt3WfC**
+
 # Cobra
 
 **Supported Solana Markets:**
