@@ -33,7 +33,7 @@ Cobra composes of 3 parts:
 - CobraNET
 - CobraWallets
 
-**..and a CLI which is `main.py`, a Command Line Interface wrapper around CobraRouter**
+**..and a CLI which is `main.py`, a Command Line Interface wrapper around [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) and [CobraWallets](https://github.com/FLOCK4H/Cobra/tree/main/CobraWallets/)**
 
 <img width="1075" height="447" alt="image" src="https://github.com/user-attachments/assets/58dc5704-fcf7-4272-a34d-15785b91cf4f" />
 
@@ -44,7 +44,7 @@ Generally, after setting up Cobra properly the features are:
 - Fetching pool's states/ keys (for developers)
 - Constructing transactions manually (for developers)
 
-**So, even if you feel like a rookie when it comes to Solana - Don't worry, the setup is quick.**
+**Even if you feel like a rookie when it comes to Solana - Don't worry, the setup is quick.**
 
 # Setup
 
@@ -57,7 +57,7 @@ $ pip install -r req.txt
 
 <h4>If you're a developer trying to use any of the modules, skip to point 4</h4>
 
-2. Configure the `secrets.env` file (only if you will be using CLI):
+2. Configure the `secrets.env` file (**only if you will be using CLI**):
 
 > [!TIP]
 > Required are: `HTTP_RPC`, `HELIUS_API_KEY` and `PRIVATE_KEY`.</br> 
@@ -69,8 +69,6 @@ $ pip install -r req.txt
 ```
 RUN_AS_CLI=True
 BOT_TOKEN=
-GROUP_CHAT_ID=
-GROUP_CHAT_RETRY_MESSAGE="<a href='https://t.me/flock4hcave'>FLOCK4H.CAVE</a>"
 HTTP_RPC="https://api.apewise.org/rpc?api-key=" # apewise.org -> fastest right now
 
 # For getting mint authority we use `getAsset` from Helius off-chain API, Free Tier works just fine:
@@ -89,6 +87,36 @@ PRIORITY_FEE_LEVEL="high" # Set if using CLI | "low", "medium", "high", "turbo"
 **That's it, if you ever want to develop with cobra module, just follow below.**
 
 4. (Optional) Install CobraRouter as a module:
+
+> [!TIP]
+> [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) doesn't need any `.env` file, but you have to supply a Helius api key to use `getAsset` from Helius Free API.
+
+**Hardcode Helius API Key below, or create a `secrets.env` where you run application. To hardcode the key change the line `HELIUS_API_KEY = os.getenv("HELIUS_API_KEY")` to `HELIUS_API_KEY = "your-api-key-here"`, proceed with installing if you hardcoded the key:**
+
+`CobraRouter/router/libutils/_helius_api.py`
+```python
+import asyncio
+import aiohttp
+import json
+import logging
+import os
+from dotenv import load_dotenv
+
+load_dotenv("secrets.env") # will walk down to find the API key, if doesn't work for some reason, please manually set the API key below
+
+# HELIUS_API_KEY = "5exxxxx-your-api-key-here"
+HELIUS_API_KEY = os.getenv("HELIUS_API_KEY")
+
+if not HELIUS_API_KEY:
+    raise ValueError("HELIUS_API_KEY is not set in secrets.env | Or we couldn't find it, please manually set the API key in `CobraRouter/router/libutils/_helius_api.py`")
+```
+
+`or via secrets.env`
+```dotnet
+HELIUS_API_KEY="your-api-key-here"
+```
+
+**Install the [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) module using `setup.py`:**
 
 ```
   $ cd CobraRouter
@@ -118,8 +146,28 @@ if __name__ == "__main__":
 
 # CobraNET
 
-CobraNET is a Telegram wrapper around the CobraRouter and CobraWallets, and allows you to host your own Dex Router.
+CobraNET is a Telegram wrapper around the CobraRouter and CobraWallets, and allows you to host your own Dex Router via Telegram Bot.
 
+## Setup
+
+Create `secrets.env` where you run the application, make sure to set:
+
+`secrets.env`
+```
+RUN_AS_CLI=False
+BOT_TOKEN=TELEGRAM_BOT_TOKEN_FROM_BOTFATHER
+```
+
+For database operations you will need PostgreSQL installed: [PostgreSQL](https://www.postgresql.org/download)
+
+Initialize the database:
+
+`$ cd Cobra`
+`$ python database.py`
+
+Run the CobraNET:
+
+`$ python main.py`
 
 ## Contact & Support
 
