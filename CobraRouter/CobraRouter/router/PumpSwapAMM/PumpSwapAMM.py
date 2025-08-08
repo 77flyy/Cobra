@@ -404,7 +404,7 @@ class PumpSwap:
             )
         )
     
-    async def reversed_buy(
+    async def reversed_sell(
         self,
         pool_data: dict,
         sell_pct: float,
@@ -843,7 +843,7 @@ class PumpSwap:
             logging.info(f"Success: {confirmed}")
         return (confirmed, send_resp.value, pool_type, min_sol_out)
 
-    async def reversed_sell(
+    async def reversed_buy(
         self,
         pool_data: dict,
         sol_amount: float,

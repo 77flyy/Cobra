@@ -268,7 +268,7 @@ class CobraSwaps:
             if pool_type == "NEW":
                 pool_data["coin_creator"] = Pubkey.from_string(pool_keys["coin_creator"])
             if str(pool_keys["base_mint"]) == "So11111111111111111111111111111111111111112":
-                ixs = await self.router.pump_swap.reversed_sell(pool_data, sol_amount, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
+                ixs = await self.router.pump_swap.reversed_buy(pool_data, sol_amount, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
             else:
                 ixs = await self.router.pump_swap.buy(pool_data, sol_amount, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
             versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
@@ -562,7 +562,7 @@ class CobraSwaps:
                 pool_data["coin_creator"] = Pubkey.from_string(pool_keys["coin_creator"])
             
             if str(pool_keys["base_mint"]) == "So11111111111111111111111111111111111111112":
-                ixs = await self.router.pump_swap.reversed_buy(pool_data, sell_pct, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
+                ixs = await self.router.pump_swap.reversed_sell(pool_data, sell_pct, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
             else:
                 ixs = await self.router.pump_swap.sell(pool_data, sell_pct, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
             versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)

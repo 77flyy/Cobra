@@ -14,6 +14,11 @@ try: from CobraRouter.CobraRouter.router.libutils.colors import * # type: ignore
 except: from .router.libutils.colors import *
 try: from CobraRouter.CobraRouter.detect import CobraDetector # type: ignore
 except: from .detect import CobraDetector
+from solders.pubkey import Pubkey # type: ignore
+from solana.rpc.types import TokenAccountOpts # type: ignore
+from solana.rpc.commitment import Processed # type: ignore
+try: from CobraRouter.CobraRouter.router.libutils._common import TOKEN_2022, TOKEN_PROGRAM_ID # type: ignore
+except: from .router.libutils._common import TOKEN_2022, TOKEN_PROGRAM_ID # type: ignore
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -32,7 +37,55 @@ class CobraRouter:
         self.detector = CobraDetector(self.router, self.async_client)
         self.swaps = CobraSwaps(self.router, self.async_client, session, rpc_url)
         self.cleaner = Cleaner()
-        self.warmed_up = False # warm up RPC cache to avoid cold-start overhead
+        self.warmed_up = False # warming up RPC cache to avoid cold-start overhead
+
+    async def list_mints(self, pubkey: str | Pubkey) -> list[str]:
+        try:
+            owner = Pubkey.from_string(pubkey) if isinstance(pubkey, str) else pubkey
+
+            resp1 = await self.async_client.get_token_accounts_by_owner_json_parsed(
+                owner,
+                TokenAccountOpts(program_id=TOKEN_PROGRAM_ID),
+                Processed,
+            )
+            resp2 = await self.async_client.get_token_accounts_by_owner_json_parsed(
+                owner,
+                TokenAccountOpts(program_id=TOKEN_2022),
+                Processed,
+            )
+
+            def extract_mints(response) -> list[str]:
+                mints: list[str] = []
+                value = getattr(response, "value", []) or []
+                for item in value:
+                    mint: str | None = None
+                    try:
+                        parsed = item.account.data.parsed
+                        if isinstance(parsed, dict):
+                            mint = parsed.get("info", {}).get("mint")
+                        else:
+                            mint = getattr(getattr(parsed, "info", {}), "mint", None)
+                    except Exception:
+                        try:
+                            mint = item["account"]["data"]["parsed"]["info"]["mint"]
+                        except Exception:
+                            mint = None
+                    if isinstance(mint, str) and len(mint) > 0:
+                        mints.append(mint)
+                return mints
+
+            all_mints = extract_mints(resp1) + extract_mints(resp2)
+
+            seen: set[str] = set()
+            unique_mints: list[str] = []
+            for m in all_mints:
+                if m not in seen:
+                    seen.add(m)
+                    unique_mints.append(m)
+            return unique_mints
+        except Exception as e:
+            logging.error(f"Error listing mints: {e}")
+            return []
 
     async def ping(self) -> bool:
         try:
@@ -55,6 +108,16 @@ class CobraRouter:
             else:
                 break
         return await self.swaps.priority_fee_levels(msg)
+
+    async def get_price(self, mint: str):
+        try:
+            dex, pool = await self.detect(mint)
+            if not dex or not pool:
+                raise ValueError(f"No pool found for mint: {mint}")
+            return await self.swaps.get_price(mint, pool, dex)
+        except Exception as e:
+            logging.error(f"Error getting price: {e}")
+            return None
 
     async def detect(self, mint: str, **kwargs):
         """

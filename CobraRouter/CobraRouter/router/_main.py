@@ -59,6 +59,7 @@ class Router:
         self.damm_v1 = MeteoraDamm1(async_client=self.async_client)
         self.damm_v2 = MeteoraDamm2(async_client=self.async_client)
         self.dlmm = MeteoraDLMM(async_client=self.async_client)
+        self.local_cache = {}
 
     async def get_mint_authority(self, mint: str):
         """
@@ -335,10 +336,14 @@ class Router:
 
     async def find_best_market_for_mint(self, mint: str):
         try:
-            dex_addr = None
-            authority, info = await self.get_mint_authority(mint)
-            if authority is None and info is None:
-                raise Exception("find_best_market_for_mint: Mint not found")
+            dex_addr, authority, info = None, None, None
+            if str(mint) in self.local_cache:
+                authority, info = self.local_cache[str(mint)]
+            else:
+                authority, info = await self.get_mint_authority(mint)
+                if authority is None and info is None:
+                    raise Exception("find_best_market_for_mint: Mint not found")
+                self.local_cache[str(mint)] = (authority, info)
             
             cprint(f"Mint: {mint} | Authority: {authority}")
             if authority in SUPPORTED_DEXES.values():
@@ -414,7 +419,14 @@ class Router:
         """
         try:
             # 0. authority hint (fast, low RPC cost)
-            authority, info = await self.get_mint_authority(mint)
+            dex_addr, authority, info = None, None, None
+            if str(mint) in self.local_cache:
+                authority, info = self.local_cache[str(mint)]
+            else:
+                authority, info = await self.get_mint_authority(mint)
+                if authority is None and info is None:
+                    raise Exception("find_best_market_for_mint: Mint not found")
+                self.local_cache[str(mint)] = (authority, info)
             if authority == "INVALID":
                 pass
             elif authority is None and info is None:

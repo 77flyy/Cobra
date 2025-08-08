@@ -1,3 +1,5 @@
+from solders.pubkey import Pubkey # type: ignore
+
 SUPPORTED_DEXES = {
     "PumpFun": "TSLvdd1pWpHVjahSpsvCXUbgwsL3JAcvokwaKt1eokM",
     "RaydiumAMM": "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8",
@@ -13,5 +15,7 @@ SUPPORTED_DEXES = {
 }
 
 WSOL_MINT = "So11111111111111111111111111111111111111112"
+TOKEN_2022 = Pubkey.from_string("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb")
+TOKEN_PROGRAM_ID = Pubkey.from_string("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")
 
 ADDR_TO_DEX = {v: k for k, v in SUPPORTED_DEXES.items()}

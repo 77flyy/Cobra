@@ -166,7 +166,7 @@ class RaydiumCpmmCore:
                     token_a_mint = keys.mint_a
                     token_b_mint = keys.mint_b
 
-                    logging.info(f"\nPool: {pool}")
+                    logging.info(f"Pool: {pool}")
                     
                     if reserve_a <= 0 or reserve_b <= 0:
                         logging.info("Skipping pool with zero reserves")

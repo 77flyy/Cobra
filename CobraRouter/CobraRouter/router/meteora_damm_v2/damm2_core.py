@@ -377,8 +377,8 @@ class DAMM2Core:
                     token_b_vault = Pubkey.from_string(pool_state["token_b_vault"])
                     
                     reserve_a, reserve_b = await self.async_get_pool_reserves(token_a_vault, token_b_vault)
-                    
-                    logging.info(f"\nPool: {pool_addr}")
+                
+                    logging.info(f"Pool: {pool_addr}")
                     
                     if reserve_a <= 0 or reserve_b <= 0 or liquidity <= 0:
                         logging.info("Skipping pool with zero reserves")

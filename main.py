@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 import logging
 import os
 import sys
@@ -14,6 +15,20 @@ from pathlib import Path
 from solders.keypair import Keypair # type: ignore
 try: from CobraRouter.CobraRouter.router.libutils._common import ADDR_TO_DEX; # type: ignore
 except: from CobraRouter.router.libutils._common import ADDR_TO_DEX; # type: ignore
+
+print(f"""
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}                                             {cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE} ▄████▄   ▒█████   ▄▄▄▄    ██▀███   ▄▄▄      {cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}▒██▀ ▀█  ▒██▒  ██▒▓█████▄ ▓██ ▒ ██▒▒████▄    {cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}▒▓█    ▄ ▒██░  ██▒▒██▒ ▄██▓██ ░▄█ ▒▒██  ▀█▄  {cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}▒▓▓▄ ▄██▒▒██   ██░▒██░█▀  ▒██▀▀█▄  ░██▄▄▄▄██ {cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}▒ ▓███▀ ░░ ████▓▒░░▓█  ▀█▓░██▓ ▒██▒ ▓█   ▓██▒{cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}░ ░▒ ▒  ░░ ▒░▒░▒░ ░▒▓███▀▒░ ▒▓ ░▒▓░ ▒▒   ▓▒█░{cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}  ░  ▒     ░ ▒ ▒░ ▒░▒   ░   ░▒ ░ ▒░  ▒   ▒▒ ░{cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}░        ░ ░ ░ ▒   ░    ░   ░░   ░   ░   ▒   {cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}░ ░          ░ ░   ░         ░           ░  ░{cc.RESET}
+{cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}░                       ░                    {cc.RESET}      
+""")
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -70,6 +85,8 @@ class Cobra:
                 cprint(f"3) Detect mint market")
                 cprint(f"4) Buy a mint")
                 cprint(f"5) Sell a mint")
+                cprint(f"6) List your mints")
+                cprint(f"7) Exit")
 
                 cmd = cinput("Enter your choice")
                 if not cmd:
@@ -104,6 +121,25 @@ class Cobra:
                     mint = cinput("Enter the mint address").lstrip()
                     sell_pct = cinput("Enter the percentage to sell (e.g. 50)").lstrip()
                     await self.swap_mint("sell", mint, int(sell_pct))
+                elif cmd == "6":
+                    await self.list_mints()
+                elif cmd == "7":
+                    await self.close()
+                    sys.exit(0)
+        except Exception as e:
+            logging.error(f"[-] Error: {e}")
+            traceback.print_exc()
+
+    async def list_mints(self):
+        try:
+            logging.info(f"[+] Getting mint info...")
+            mints = await self.router.list_mints(self.keypair.pubkey())
+            if mints:
+                for mint in mints:
+                    price = await self.router.get_price(str(mint))
+                    logging.info(f"[+] Mint: {mint} | Price: {price}")
+            else:
+                logging.error("[-] No mints found")
         except Exception as e:
             logging.error(f"[-] Error: {e}")
             traceback.print_exc()
