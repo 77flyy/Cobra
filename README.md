@@ -31,7 +31,7 @@ Cobra composes of 3 parts:
 
 **and a CLI, a Command Line Interface wrapper around [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) and [CobraWallets](https://github.com/FLOCK4H/Cobra/tree/main/CobraWallets/):**
 
-<img width="1001" height="493" alt="image" src="https://github.com/user-attachments/assets/f19ebb9f-a198-4353-920a-34746060f80a" />
+<img width="1101" height="526" alt="image" src="https://github.com/user-attachments/assets/5eef96af-6640-47a0-8541-9ba0066a093f" />
 
 Check out **[How to run CLI](https://flock4h.github.io/Cobra/first/installation/#4-optional-cli-configuration)**
 
