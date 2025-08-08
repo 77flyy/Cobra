@@ -1,4 +1,4 @@
-<img src="https://github.com/FLOCK4H/Cobra/blob/main/imgs/cobra_banner.png" />
+<img src="https://github.com/FLOCK4H/Cobra/blob/main/docs/imgs/cobra_banner.png" />
 
 > [!IMPORTANT]
 > This software is open-source & free of any charge, there are no fees, nor ads included in the repo.
