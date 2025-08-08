@@ -24,10 +24,6 @@ Read the **[Cobra Documentation](https://flock4h.github.io/Cobra)**
 9. [Raydium AMM V4](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/raydiumswap/amm_v4)
 10. [Raydium Launchlab](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router/raydiumswap/launchlab)
 
-Clink any market to see their respective implementations, or find them here: [CobraRouter/router](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter/router)
-
-<h5>Every market implementation is a self-contained library, meaning you can copy a specific folder to your project and just import what you need.</h5>
-
 Cobra composes of 3 parts:
 - CobraRouter
 - CobraNET (Optional)
@@ -35,7 +31,9 @@ Cobra composes of 3 parts:
 
 **and a CLI, a Command Line Interface wrapper around [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) and [CobraWallets](https://github.com/FLOCK4H/Cobra/tree/main/CobraWallets/):**
 
-<img width="1075" height="447" alt="image" src="https://github.com/user-attachments/assets/58dc5704-fcf7-4272-a34d-15785b91cf4f" />
+<img width="1001" height="493" alt="image" src="https://github.com/user-attachments/assets/f19ebb9f-a198-4353-920a-34746060f80a" />
+
+Check out **[How to run CLI](https://flock4h.github.io/Cobra/first/installation/#4-optional-cli-configuration)**
 
 Generally, after setting up Cobra properly, the features are:
 - Generating Wallets, Grinding Custom Wallets
