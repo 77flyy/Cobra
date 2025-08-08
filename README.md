@@ -35,7 +35,7 @@ Cobra composes of 3 parts:
 
 Check out **[How to run CLI](https://flock4h.github.io/Cobra/first/installation/#4-optional-cli-configuration)**
 
-Generally, after setting up Cobra properly, the features are:
+After setting up Cobra properly, the features are:
 - Generating Wallets, Grinding Custom Wallets
 - Buying, selling on supported markets (& in Pump.fun AMM - creating new pools)
 - Detecting mint's market and pool address
