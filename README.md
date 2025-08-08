@@ -9,7 +9,7 @@
 
 # Cobra
 
-**Off-chain DeX router on Solana. Can grind a custom vanity key (e.g. `FL4CKfetEWBMXFs15ZAz4peyGbCuzVaoszRKcoVt3WfC`), find a market for a mint to swap on, find a pool with sufficient liquidity, swap on supported markets, and more...** 
+Read the **[Cobra Documentation](https://flock4h.github.io/Cobra)**
 
 **Supported Solana Markets:**
 
