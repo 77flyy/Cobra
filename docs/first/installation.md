@@ -34,7 +34,7 @@ pip install .
 
 ### 3) Optional: CLI configuration
 
-To use Cobra’s CLI, set these variables in `secrets.env`:
+To use Cobra’s CLI, set these variables in `secrets.env`, preferably put the file under root directory of the project:
 
 ```bash
 RUN_AS_CLI=True
