@@ -29,11 +29,31 @@ class CobraRouter:
     def __init__(self, rpc_url: str, session: aiohttp.ClientSession):
         self.async_client = AsyncClient(rpc_url)
         self.router = Router(self.async_client, session)
-        self.detector = CobraDetector(self.router, rpc_url)
-        self.swaps = CobraSwaps(self.router, self.async_client, aiohttp.ClientSession(), rpc_url)
+        self.detector = CobraDetector(self.router, self.async_client)
+        self.swaps = CobraSwaps(self.router, self.async_client, session, rpc_url)
         self.cleaner = Cleaner()
+        self.warmed_up = False # warm up RPC cache to avoid cold-start overhead
+
+    async def ping(self) -> bool:
+        try:
+            resp = await self.async_client.get_latest_blockhash()
+            if resp is None:
+                raise Exception("ping: Failed to get latest blockhash")
+            self.warmed_up = True
+            logging.info("RPC cache warmed up.")
+            return True
+        except Exception as e:
+            logging.error(f"Error pinging router: {e}")
+            return False
 
     async def get_priority_fee(self, msg: VersionedMessage | None = None):
+        while not self.warmed_up:
+            logging.info("Warming up RPC cache...")
+            if not await self.ping():
+                await asyncio.sleep(0.5)
+                continue
+            else:
+                break
         return await self.swaps.priority_fee_levels(msg)
 
     async def detect(self, mint: str, **kwargs):
@@ -43,6 +63,13 @@ class CobraRouter:
                 dex: str
                 pool: str
         """
+        while not self.warmed_up:
+            logging.info("Warming up RPC cache...")
+            if not await self.ping():
+                await asyncio.sleep(0.5)
+                continue
+            else:
+                break
         exclude_pools = kwargs.get("exclude_pools", [])
         dex, pool = await self.detector._detect(mint, exclude_pools=exclude_pools)
         return dex, pool
@@ -52,6 +79,13 @@ class CobraRouter:
             Returns:
                 tuple: (sig: str, ok: str)
         """
+        while not self.warmed_up:
+            logging.info("Warming up RPC cache...")
+            if not await self.ping():
+                await asyncio.sleep(0.5)
+                continue
+            else:
+                break
         if action == "buy":
             sig, ok = await self.swaps.buy(mint, pool, keypair, sol_amount_in, slippage, priority_level, dex)
             return (sig, ok)

@@ -120,7 +120,7 @@ class CobraSwaps:
             "params": [accs],
         }
 
-        async with self.session.post(self.rpc_url, json=payload, timeout=4) as r:
+        async with self.session.post(self.ctx._provider.endpoint_uri, json=payload, timeout=4) as r:
             rows = (await r.json()).get("result", [])
 
         vals = [row.get("prioritizationFee", 0) for row in rows if row.get("prioritizationFee")]

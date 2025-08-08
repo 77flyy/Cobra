@@ -352,7 +352,7 @@ class Router:
         `timeout` caps total wait (seconds). None = wait until all done.
         """
         try:
-            # --- 0. authority hint (fast, low RPC cost)
+            # 0. authority hint (fast, low RPC cost)
             authority, info = await get_mint_authority(self.session, mint)
             if authority == "INVALID":
                 pass
@@ -370,7 +370,7 @@ class Router:
                 elif "BLV" in mint:
                     return await self.check_route_believe(mint)
 
-            # --- 1. task runners ------------------------------------------------
+            # 1. task runners
             async def run_pump():
                 return await self.check_route_pump(mint)
 

@@ -41,7 +41,7 @@ class Cobra:
         try: self.keypair = Keypair.from_base58_string(os.getenv("PRIVATE_KEY"));
         except: self.keypair = None
         if RUN_AS_CLI == "False":
-            self.net = CobraNET(self.router) # Uncomment this to initialize the Telegram bot
+            self.net = CobraNET(self.router)
         else:
             self.net = None
 
@@ -148,34 +148,26 @@ class Cobra:
             await asyncio.sleep(1)
 
     async def run(self):
-        logging.info("Initializing Cobra, pass RUN_AS_CLI=True to the secrets.env to run as CLI...")
-        await asyncio.gather(
-            self.net.run() if self.net is not None else self.loop(),
-            self.CLI() if RUN_AS_CLI == "True" else self.loop(),
-        )
-        await self.close()
+        try:
+            logging.info("Initializing Cobra, pass RUN_AS_CLI=True to the secrets.env to run as CLI...")
+            await asyncio.gather(
+                self.net.run() if self.net is not None else self.loop(),
+                self.CLI() if RUN_AS_CLI == "True" else self.loop(),
+            )
+        finally:
+            await self.close()
 
     async def close(self):
         await self.router.close()
 
 async def main():
-    try:
-        session = aiohttp.ClientSession()
-        cobra = Cobra(session)
-
-        await cobra.run()
-    except (KeyboardInterrupt, EOFError):
-        cprint(f"Keyboard interrupt detected, closing Cobra...")
-        try:
-            await cobra.close()
-        except:
-            traceback.print_exc() 
-            pass
-        sys.exit(0)
-    except Exception as e:
-        logging.error(f"Error: {e}")
-        traceback.print_exc()
-        sys.exit(1)
+    session = aiohttp.ClientSession()
+    cobra = Cobra(session)
+    await cobra.run()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except (KeyboardInterrupt, EOFError):
+        logging.info("Keyboard interrupt detected, closing Cobra...")
+        sys.exit(0)

@@ -7,8 +7,8 @@ try: from router.libutils.colors import *
 except: from .router.libutils.colors import *
 
 class CobraDetector:
-    def __init__(self, router: Router, rpc_url: str):
-        self.async_client = AsyncClient(rpc_url)
+    def __init__(self, router: Router, async_client: AsyncClient):
+        self.async_client = async_client
         self.router = router
 
     async def _detect(self, mint: str, exclude_pools: list[str] = []):

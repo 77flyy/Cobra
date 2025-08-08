@@ -125,7 +125,7 @@ class PumpFun:
 
     async def _mint_owner(self, mint: Pubkey) -> Pubkey:
         try:
-            info = await self.ctx.get_account_info(mint, commitment=Confirmed)
+            info = await self.async_client.get_account_info(mint, commitment=Confirmed)
             if info.value is None:
                 raise RuntimeError("mint account missing")
             return info.value.owner
@@ -327,13 +327,15 @@ class PumpFun:
         
         # Check if the ATA exists
         ata_exists = await self.check_ata_exists(owner, mint_address)
+        token_program_id = await self._mint_owner(mint_address)
         
         if not ata_exists:
             instructions.append(
                 create_associated_token_account(
                     payer=owner,
                     owner=owner,
-                    mint=mint_address
+                    mint=mint_address,
+                    token_program_id=token_program_id
                 )
             )
 

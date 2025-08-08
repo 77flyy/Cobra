@@ -1,8 +1,37 @@
 site_name: Cobra Docs
 theme:
   name: material
-  features:
-    - navigation.instant
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      linenums: false
+      guess_lang: false
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.snippets
 plugins:
   - search
   - autorefs
@@ -14,8 +43,9 @@ plugins:
             separate_signature: true
 nav:
   - General:
-      - Home: index.md
-      - Overview: general/overview.md
+      - Overview: index.md
+      - Cobra's Mission: general/mission.md
+      - Support Us: general/support.md
   - First steps:
       - Installation: first/installation.md
       - Quick start: first/quickstart.md
