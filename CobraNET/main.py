@@ -310,12 +310,11 @@ class CobraNET:
         if not pub:
             return "no_wallet"
         pubkey = pub["pubkey"]
-        balance, ok = await self.router.swaps.get_balance("So11111111111111111111111111111111111111112", pubkey)
-        logging.info(f"Debug | balance for {pubkey}: {balance}")
-        if balance > 0:
-            balance = (balance / 1e9)
+        balance, balance_raw, ok = await self.router.swaps.get_balance("So11111111111111111111111111111111111111112", pubkey)
         if ok == "success":
-            await self.db_hook.update_balance(str(uid), str(balance))
+            logging.info(f"Debug | balance for {pubkey}: {balance}")
+            await self.db_hook.update_balance(str(uid), str(balance_raw))
+            return "success"
         else:
             logging.info(f"Error updating balance for {pubkey}: {ok}")
 
@@ -677,7 +676,7 @@ class CobraNET:
             else:
                 await self.send_message(uid, f"<b>Failure\n\n<i>{FAILURE_MSG}</i>\nSignature: <a href='https://solscan.io/tx/{sig}'>{sig}</a></b>")
             
-            token_balance, ok = await self.router.swaps.get_balance(mint, keypair.pubkey())
+            token_balance, token_balance_raw, ok = await self.router.swaps.get_balance(mint, keypair.pubkey())
             if ok == "success" and token_balance > 0:
                 await self.db_hook.update_tokens(str(uid), [{"name": mint, "balance": token_balance, "dex": dex, "pool": pool}])
         except Exception as e:
@@ -741,13 +740,14 @@ class CobraNET:
             else:
                 await self.send_message(uid, f"<b>Failure\n\n<i>{FAILURE_MSG}</i>\nSignature: <a href='https://solscan.io/tx/{sig}'>{sig}</a></b>")
 
-            token_balance, ok = await self.router.swaps.get_balance(mint, keypair.pubkey())
-            if token_balance == 0:
-                await self.db_hook.remove_token(str(uid), mint)
-                return
+            token_balance, token_balance_raw, ok = await self.router.swaps.get_balance(mint, keypair.pubkey())
 
             if ok != "success":
                 await self.send_message(uid, f"<b>Error: {ok} | Contact support if this persists.</b>")
+                return
+
+            if token_balance == 0:
+                await self.db_hook.remove_token(str(uid), mint)
                 return
 
             await self.db_hook.update_tokens(str(uid), [{"name": mint, "balance": token_balance, "dex": dex, "pool": pool}])
@@ -837,7 +837,7 @@ class CobraNET:
                 return
             
             keypair = Keypair.from_base58_string(wallet["privkey"])
-            token_balance, ok = await self.router.swaps.get_balance(mint, keypair.pubkey())
+            token_balance, token_balance_raw, ok = await self.router.swaps.get_balance(mint, keypair.pubkey())
             if ok != "success":
                 await self.send_message(uid, f"<b>Error: {ok} | Contact support if this persists.</b>")
                 return
@@ -909,7 +909,7 @@ class CobraNET:
 
                 amount = int(amount * 10 ** decimals)
             
-            sig, ok = await self.cleaner.close_token_accounts(self.router.async_client, Keypair.from_base58_string(wallet["privkey"]), mint, amount, decimals)
+            sig, ok = await self.cleaner.close_token_account(self.router.async_client, Keypair.from_base58_string(wallet["privkey"]), mint, amount, decimals)
             if ok:
                 await self.send_message(uid, f"<b>Burn transaction sent: <a href='https://solscan.io/tx/{sig}'>{sig}</a></b>")
             else:

@@ -53,7 +53,7 @@ class Cleaner:
         logging.info(f"✅ Unwrapped + Closed: {sig}")
 
     @staticmethod
-    async def close_token_accounts(client: AsyncClient, payer: Keypair, mint: Pubkey | str, to_burn: int = 1, decimals: int = 6):
+    async def close_token_account(client: AsyncClient, payer: Keypair, mint: Pubkey | str, to_burn: int = 1, decimals: int = 6):
         tx = []
         mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
         token_account = get_associated_token_address(payer.pubkey(), mint)

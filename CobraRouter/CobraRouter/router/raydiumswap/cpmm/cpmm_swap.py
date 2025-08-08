@@ -252,6 +252,8 @@ class RaydiumCpmmSwap:
             raise RuntimeError("no balance")
 
         ui_bal = float(bal_resp.value[0].account.data.parsed["info"]["tokenAmount"]["uiAmount"] or 0)
+        if ui_bal <= 0:
+            raise RuntimeError("no balance")
         amount_tokens = ui_bal * sell_pct / 100
         lamports_in   = int(amount_tokens * 10 ** dec_in)
 

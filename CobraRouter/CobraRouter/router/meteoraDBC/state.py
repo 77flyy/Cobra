@@ -1,6 +1,8 @@
 # state.py
 import asyncio, base64
 from decimal import Decimal
+import logging
+import traceback
 
 from construct import Struct, Int8ul, Int16ul, Int32ul, Int64ul, Bytes, Array
 
@@ -126,6 +128,27 @@ VirtualPoolLayout = Struct(
     "padding1"           / Bytes(56),
 )
 
+async def get_decimals(mint: str | Pubkey, ctx: AsyncClient) -> int:
+    try:
+        if str(mint) == "So11111111111111111111111111111111111111112":
+            return 9
+        
+        mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
+        mint_info = await ctx.get_account_info_json_parsed(
+            mint,
+            commitment=Processed
+        )
+        if not mint_info:
+            logging.info("Error: Failed to fetch mint info (tried to fetch token decimals).")
+            return None
+        dec_base = mint_info.value.data.parsed['info']['decimals']
+        return int(dec_base)
+    except Exception as e:
+        logging.error(f"Error getting decimals for mint: {e}")
+        traceback.print_exc()
+        return None
+
+
 Q64 = 1 << 64
 def price_from_sqrt(sqrt_q64: int, base_dec: int, quote_dec: int) -> float:
     p = (sqrt_q64 / Q64) ** 2
@@ -172,8 +195,10 @@ async def fetch_virtual_pool(pool_addr: str | Pubkey, ctx: AsyncClient):
 
 async def get_price(pool_addr: str | Pubkey, ctx: AsyncClient):
     pool = await fetch_virtual_pool(pool_addr, ctx)
-    const = Decimal(pool["quote_reserve"]) / Decimal(pool["base_reserve"])
-    return const
+    decimals_base = await get_decimals(pool["base_mint"], ctx)
+    decimals_quote = 9
+    price = price_from_sqrt(pool["sqrt_price"], decimals_base, decimals_quote)
+    return price
 
 async def fetch_pool_config(pool_addr: str, ctx: AsyncClient):
     pk   = Pubkey.from_string(pool_addr)

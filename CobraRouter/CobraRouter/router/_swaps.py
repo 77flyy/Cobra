@@ -63,13 +63,18 @@ class CobraSwaps:
             )
 
         if not bal_resp.value:
-            return (0, "account_not_found")
+            return (0, 0, "account_not_found")
 
         token_balance = float(bal_resp.value[0].account.data.parsed["info"]["tokenAmount"]["uiAmount"] or 0) if str(token_pk) != "So11111111111111111111111111111111111111112" else bal_resp.value
         if token_balance <= 0:
-            return (0, "account_empty")
-        
-        return (token_balance, "success")
+            return (0, 0, "account_empty")
+        token_balance_raw = int(bal_resp.value[0].account.data.parsed["info"]["tokenAmount"]["amount"] or 0) if str(token_pk) != "So11111111111111111111111111111111111111112" else bal_resp.value
+        if token_balance_raw <= 0:
+            return (0, 0, "account_empty")
+        if str(token_pk) != "So11111111111111111111111111111111111111112":
+            token_balance = token_balance_raw / 1e9
+
+        return (token_balance, token_balance_raw, "success")
 
     async def get_multiple_balances(self, mints: list[str | Pubkey], pubkey: str | Pubkey):
         pubkey = Pubkey.from_string(pubkey) if isinstance(pubkey, str) else pubkey
@@ -85,9 +90,10 @@ class CobraSwaps:
                 if not value or not value.data:
                     continue
                 mint = value.data.parsed["info"].get("mint", "")
-                amount = float(value.data.parsed["info"].get("tokenAmount", {}).get("uiAmount", 0))  
-                if mint and amount:
-                    balances[str(mint)] = float(amount)
+                amount = float(value.data.parsed["info"].get("tokenAmount", {}).get("uiAmount", 0))
+                raw_amount = int(value.data.parsed["info"].get("tokenAmount", {}).get("amount", 0))
+                if mint:
+                    balances[str(mint)] = (float(amount), raw_amount)
             return balances
         except Exception as e:
             logging.info(f"Error fetching vault reserves: {e}")
@@ -210,127 +216,132 @@ class CobraSwaps:
         dex: str = SUPPORTED_DEXES["RaydiumAMM"],
         **kwargs
     ):
-        return_instructions = kwargs.get("return_instructions", False) == True
+        try:
+            return_instructions = kwargs.get("return_instructions", False) == True
 
-        ixs = []
-        sim, is_dlmm = False, False
-        versioned_message = None
-        blockhash = (await self.ctx.get_latest_blockhash()).value.blockhash
+            ixs = []
+            sim, is_dlmm = False, False
+            versioned_message = None
+            blockhash = (await self.ctx.get_latest_blockhash()).value.blockhash
 
-        if dex == SUPPORTED_DEXES["MeteoraDamm1"]:
-            state = await self.router.damm_v1.core.fetch_pool_state(pool)
-            ixs = await self.router.damm_v1.buy(mint, state, int(sol_amount * LAMPORTS_PER_SOL), keypair=keypair, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["MeteoraDamm2"]:
-            state = await self.router.damm_v2.core.fetch_pool_state(pool)
-            swap_params = await self.router.damm_v2.build_swap_params(
-                state, 
-                pool, 
-                mint, 
-                int(sol_amount * LAMPORTS_PER_SOL),
-                keypair
-            )
-            ixs = await self.router.damm_v2.buy(swap_params, keypair=keypair, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["MeteoraDLMM"]:
-            sim, is_dlmm = True, True
-            state = await self.router.dlmm.core.fetch_pool_state(pool)
-            ixs = await self.router.dlmm.buy(mint, state, int(sol_amount * LAMPORTS_PER_SOL), keypair=keypair, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["MeteoraDBC"] or dex == SUPPORTED_DEXES["Believe"]:
-            _, state = await self.router.meteora_dbc.fetch_state(mint)
-            ixs = await self.router.meteora_dbc.swap.buy(state, int(sol_amount * LAMPORTS_PER_SOL), 1, keypair=keypair, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["PumpFun"]:
-            price = await self.router.pump_fun.get_price(mint)
-            if price is None:
-                raise Exception(f"CobraSwaps | Price for {mint} is None")
-            token_amount = await self.router.pump_fun.lamports_to_tokens(int(sol_amount * LAMPORTS_PER_SOL), price)
-            creator = await self.router.get_pump_fun_creator(self.ctx, str(pool))
-            ixs = await self.router.pump_fun.pump_buy(mint, pool, int(sol_amount * LAMPORTS_PER_SOL), creator, keypair, token_amount, slippage=slippage, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["PumpSwap"]:
-            pool_keys, pool_type = await self.router.pump_swap_fetch_state(pool, self.ctx)
-            base_price, base_balance_tokens, quote_balance_sol = await self.router.pump_swap.fetch_pool_base_price(pool)
-            decimals_base = await self.router.get_decimals(mint)
-            decimals_quote = await self.router.get_decimals(pool_keys["quote_mint"])
-            pool_data = {
-                "pool_pubkey": Pubkey.from_string(str(pool)),
-                "token_base": Pubkey.from_string(pool_keys["base_mint"]),
-                "token_quote": Pubkey.from_string(pool_keys["quote_mint"]),
-                "pool_base_token_account": pool_keys["pool_base_token_account"],
-                "pool_quote_token_account": pool_keys["pool_quote_token_account"],
-                "base_balance_tokens": base_balance_tokens,
-                "quote_balance_sol": quote_balance_sol,
-                "decimals_base": decimals_base,
-                "decimals_quote": decimals_quote,
-            }
-            if pool_type == "NEW":
-                pool_data["coin_creator"] = Pubkey.from_string(pool_keys["coin_creator"])
-            if str(pool_keys["base_mint"]) == "So11111111111111111111111111111111111111112":
-                ixs = await self.router.pump_swap.reversed_buy(pool_data, sol_amount, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
-            else:
-                ixs = await self.router.pump_swap.buy(pool_data, sol_amount, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["RaydiumAMM"]:
-            ixs = await self.router.raydiumswap_v4.execute_buy_async(mint, sol_amount, slippage, 0, pool, keypair=keypair, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["RayCLMM"]:
-            state = await self.router.clmm_swap.core.async_fetch_pool_keys(pool)
-            ixs = await self.router.clmm_swap.execute_clmm_buy_async(mint, sol_amount, keypair, 1, 0, pool, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["RayCPMM"]:
-            state = await self.router.cpmm_swap.core.async_fetch_pool_keys(pool)
-            ixs = await self.router.cpmm_swap.execute_cpmm_buy_async(mint, sol_amount, keypair, slippage, 0, pool, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["Launchpad"]:
-            state = await self.router.launchlab_swap.core.async_fetch_pool_keys(pool)
-            ixs = await self.router.launchlab_swap.execute_lp_buy_async(mint, sol_amount, slippage, keypair, pool, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            if dex == SUPPORTED_DEXES["MeteoraDamm1"]:
+                state = await self.router.damm_v1.core.fetch_pool_state(pool)
+                ixs = await self.router.damm_v1.buy(mint, state, int(sol_amount * LAMPORTS_PER_SOL), keypair=keypair, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["MeteoraDamm2"]:
+                state = await self.router.damm_v2.core.fetch_pool_state(pool)
+                swap_params = await self.router.damm_v2.build_swap_params(
+                    state, 
+                    pool, 
+                    mint, 
+                    int(sol_amount * LAMPORTS_PER_SOL),
+                    keypair
+                )
+                ixs = await self.router.damm_v2.buy(swap_params, keypair=keypair, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["MeteoraDLMM"]:
+                sim, is_dlmm = True, True
+                state = await self.router.dlmm.core.fetch_pool_state(pool)
+                ixs = await self.router.dlmm.buy(mint, state, int(sol_amount * LAMPORTS_PER_SOL), keypair=keypair, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["MeteoraDBC"] or dex == SUPPORTED_DEXES["Believe"]:
+                _, state = await self.router.meteora_dbc.fetch_state(mint)
+                ixs = await self.router.meteora_dbc.swap.buy(state, int(sol_amount * LAMPORTS_PER_SOL), 1, keypair=keypair, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["PumpFun"]:
+                price = await self.router.pump_fun.get_price(mint)
+                if price is None:
+                    raise Exception(f"CobraSwaps | Price for {mint} is None")
+                token_amount = await self.router.pump_fun.lamports_to_tokens(int(sol_amount * LAMPORTS_PER_SOL), price)
+                creator = await self.router.get_pump_fun_creator(self.ctx, str(pool))
+                ixs = await self.router.pump_fun.pump_buy(mint, pool, int(sol_amount * LAMPORTS_PER_SOL), creator, keypair, token_amount, slippage=slippage, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["PumpSwap"]:
+                pool_keys, pool_type = await self.router.pump_swap_fetch_state(pool, self.ctx)
+                base_price, base_balance_tokens, quote_balance_sol = await self.router.pump_swap.fetch_pool_base_price(pool)
+                decimals_base = await self.router.get_decimals(mint)
+                decimals_quote = await self.router.get_decimals(pool_keys["quote_mint"])
+                pool_data = {
+                    "pool_pubkey": Pubkey.from_string(str(pool)),
+                    "token_base": Pubkey.from_string(pool_keys["base_mint"]),
+                    "token_quote": Pubkey.from_string(pool_keys["quote_mint"]),
+                    "pool_base_token_account": pool_keys["pool_base_token_account"],
+                    "pool_quote_token_account": pool_keys["pool_quote_token_account"],
+                    "base_balance_tokens": base_balance_tokens,
+                    "quote_balance_sol": quote_balance_sol,
+                    "decimals_base": decimals_base,
+                    "decimals_quote": decimals_quote,
+                }
+                if pool_type == "NEW":
+                    pool_data["coin_creator"] = Pubkey.from_string(pool_keys["coin_creator"])
+                if str(pool_keys["base_mint"]) == "So11111111111111111111111111111111111111112":
+                    ixs = await self.router.pump_swap.reversed_buy(pool_data, sol_amount, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
+                else:
+                    ixs = await self.router.pump_swap.buy(pool_data, sol_amount, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["RaydiumAMM"]:
+                ixs = await self.router.raydiumswap_v4.execute_buy_async(mint, sol_amount, slippage, 0, pool, keypair=keypair, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["RayCLMM"]:
+                state = await self.router.clmm_swap.core.async_fetch_pool_keys(pool)
+                ixs = await self.router.clmm_swap.execute_clmm_buy_async(mint, sol_amount, keypair, 1, 0, pool, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["RayCPMM"]:
+                state = await self.router.cpmm_swap.core.async_fetch_pool_keys(pool)
+                ixs = await self.router.cpmm_swap.execute_cpmm_buy_async(mint, sol_amount, keypair, slippage, 0, pool, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["Launchpad"]:
+                state = await self.router.launchlab_swap.core.async_fetch_pool_keys(pool)
+                ixs = await self.router.launchlab_swap.execute_lp_buy_async(mint, sol_amount, slippage, keypair, pool, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
 
-        if return_instructions:
+            if return_instructions:
+                return ixs
+
+            if versioned_message is None:
+                raise Exception("CobraSwaps | No versioned message found")
+
+            priority_fee = await self.priority_fee_levels(versioned_message)
+            logging.info(f"Currently using: {priority_fee_level} | Low: {priority_fee['low']:.8f} | Medium: {priority_fee['medium']:.8f} | High: {priority_fee['high']:.8f} | Turbo: {priority_fee['turbo']:.8f}")
+            priority_fee = priority_fee[priority_fee_level]
+            if priority_fee is None:
+                priority_fee = 0.000005
+            
+            if priority_fee > 0.01:
+                raise Exception("CobraSwaps | Priority fee is too high (Over 0.01 SOL)")
+
+            if ixs:
+                lamports_fee = int(priority_fee * LAMPORTS_PER_SOL)
+                micro_lamports = compute_unit_price_from_total_fee(
+                    lamports_fee,
+                    compute_units=_DEFAULT_CU
+                )
+
+                ixs.append(set_compute_unit_limit(_DEFAULT_CU))
+                ixs.append(set_compute_unit_price(micro_lamports))
+                ver_msg = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+                tx = VersionedTransaction(ver_msg, [keypair])
+
+                if sim:
+                    simulate_resp = await self.ctx.simulate_transaction(tx)
+                    if simulate_resp.value and simulate_resp.value.err:
+                        if not is_dlmm:
+                            logging.info(f"Simulation result: {simulate_resp.value}")
+                            raise Exception(f"Simulation failed: {simulate_resp.value.err}")
+                        else:
+                            return ("replay", False)
+
+                result = await self.ctx.send_transaction(tx, opts=TxOpts(skip_preflight=True, max_retries=0))
+                logging.info(f"Cobra | Buy transaction sent: {result.value}")
+                ok = await self._await_confirm(result.value)
+                logging.info(f"Cobra | Buy transaction confirmed: {ok}")
+                return (result.value, ok)
+
             return ixs
-
-        if versioned_message is None:
-            raise Exception("CobraSwaps | No versioned message found")
-
-        priority_fee = await self.priority_fee_levels(versioned_message)
-        logging.info(f"Currently using: {priority_fee_level} | Low: {priority_fee['low']:.8f} | Medium: {priority_fee['medium']:.8f} | High: {priority_fee['high']:.8f} | Turbo: {priority_fee['turbo']:.8f}")
-        priority_fee = priority_fee[priority_fee_level]
-        if priority_fee is None:
-            priority_fee = 0.000005
-        
-        if priority_fee > 0.01:
-            raise Exception("CobraSwaps | Priority fee is too high (Over 0.01 SOL)")
-
-        if ixs:
-            lamports_fee = int(priority_fee * LAMPORTS_PER_SOL)
-            micro_lamports = compute_unit_price_from_total_fee(
-                lamports_fee,
-                compute_units=_DEFAULT_CU
-            )
-
-            ixs.append(set_compute_unit_limit(_DEFAULT_CU))
-            ixs.append(set_compute_unit_price(micro_lamports))
-            ver_msg = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-            tx = VersionedTransaction(ver_msg, [keypair])
-
-            if sim:
-                simulate_resp = await self.ctx.simulate_transaction(tx)
-                if simulate_resp.value and simulate_resp.value.err:
-                    if not is_dlmm:
-                        logging.info(f"Simulation result: {simulate_resp.value}")
-                        raise Exception(f"Simulation failed: {simulate_resp.value.err}")
-                    else:
-                        return ("replay", False)
-
-            result = await self.ctx.send_transaction(tx, opts=TxOpts(skip_preflight=True, max_retries=0))
-            logging.info(f"Cobra | Buy transaction sent: {result.value}")
-            ok = await self._await_confirm(result.value)
-            logging.info(f"Cobra | Buy transaction confirmed: {ok}")
-            return (result.value, ok)
-
-        return ixs
+        except Exception as e:
+            logging.error(f"CobraSwaps | Error buying: {e}")
+            traceback.print_exc()
+            return (None, False)
 
     def _build_system_transfer_ix(self, from_pubkey: Pubkey, to_pubkey: Pubkey, lamports: int):
             return transfer(
@@ -447,187 +458,193 @@ class CobraSwaps:
         dex: str = SUPPORTED_DEXES["RaydiumAMM"],
         **kwargs
     ):
-        """
-        Sell tokens for SOL across different DEX platforms
-        
-        Args:
-            mint: Token mint address to sell
-            pool: Pool address for the token
-            sell_pct: Percentage of token balance to sell (0-100)
-            slippage: Slippage tolerance (0.01 = 1%)
-            priority_fee_level: Priority fee level ("low", "medium", "high")
-            dex: DEX to use for the swap
-        
-        Returns:
-            tuple: (transaction_signature, confirmation_status)
-        """
-        return_instructions = kwargs.get("return_instructions", False) == True
-        sim, is_dlmm = False, False
-        ixs = []
-        versioned_message = None
-        blockhash = (await self.ctx.get_latest_blockhash()).value.blockhash
-
-        if dex == SUPPORTED_DEXES["MeteoraDamm1"]:
-            state = await self.router.damm_v1.core.fetch_pool_state(pool)
-            ixs = await self.router.damm_v1.sell(mint, state, sell_pct, keypair=keypair, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["MeteoraDamm2"]:
-            if sell_pct is None or sell_pct <= 0:
-                raise ValueError("Percentage can't be 0 and is required for sell actions")
-
-            if sell_pct > 100:
-                raise ValueError("Percentage can't be greater than 100")
-
-            token_pk = Pubkey.from_string(mint) if isinstance(mint, str) else mint
-
-            dec_base = await self.router.get_decimals(mint)
-
-            bal_resp = await self.ctx.get_token_accounts_by_owner_json_parsed(
-                keypair.pubkey(), TokenAccountOpts(mint=token_pk), Processed
-            )
-            if not bal_resp.value:
-                raise RuntimeError("no balance")
-
-            token_balance = float(bal_resp.value[0].account.data.parsed["info"]["tokenAmount"]["uiAmount"] or 0)
-            if token_balance <= 0:
-                raise RuntimeError("insufficient token balance")
-
-            sell_amount = token_balance * (sell_pct / 100)
-            if sell_amount <= 0:
-                raise RuntimeError("sell amount too small")
+        try:
+            """
+            Sell tokens for SOL across different DEX platforms
             
-            tokens_in = int(sell_amount * 10**dec_base)
-            state = await self.router.damm_v2.core.fetch_pool_state(pool)
-            swap_params = await self.router.damm_v2.build_swap_params(
-                state, 
-                pool, 
-                mint, 
-                tokens_in,
-                keypair
-            )
-            ixs = await self.router.damm_v2.sell(swap_params, keypair=keypair, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["MeteoraDLMM"]:
-            sim, is_dlmm = True, True
-            state = await self.router.dlmm.core.fetch_pool_state(pool)
-            ixs = await self.router.dlmm.sell(mint, state, sell_pct, keypair=keypair, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["MeteoraDBC"] or dex == SUPPORTED_DEXES["Believe"]:
-            _, state = await self.router.meteora_dbc.fetch_state(mint)
-            ixs = await self.router.meteora_dbc.swap.sell(state, sell_pct, keypair=keypair, slippage_pct=slippage, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["PumpFun"]:
-            token_pk = Pubkey.from_string(mint) if isinstance(mint, str) else mint
-            bal_resp = await self.ctx.get_token_accounts_by_owner_json_parsed(
-                keypair.pubkey(), TokenAccountOpts(mint=token_pk), Processed
-            )
-            if not bal_resp.value:
-                raise Exception("No token balance found")
+            Args:
+                mint: Token mint address to sell
+                pool: Pool address for the token
+                sell_pct: Percentage of token balance to sell (0-100)
+                slippage: Slippage tolerance (0.01 = 1%)
+                priority_fee_level: Priority fee level ("low", "medium", "high")
+                dex: DEX to use for the swap
             
-            token_balance = float(bal_resp.value[0].account.data.parsed["info"]["tokenAmount"]["uiAmount"] or 0)
-            if token_balance <= 0:
-                raise Exception("Insufficient token balance")
+            Returns:
+                tuple: (transaction_signature, confirmation_status)
+            """
+            return_instructions = kwargs.get("return_instructions", False) == True
+            sim, is_dlmm = False, False
+            ixs = []
+            versioned_message = None
+            blockhash = (await self.ctx.get_latest_blockhash()).value.blockhash
+
+            if dex == SUPPORTED_DEXES["MeteoraDamm1"]:
+                state = await self.router.damm_v1.core.fetch_pool_state(pool)
+                ixs = await self.router.damm_v1.sell(mint, state, sell_pct, keypair=keypair, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["MeteoraDamm2"]:
+                if sell_pct is None or sell_pct <= 0:
+                    raise ValueError("Percentage can't be 0 and is required for sell actions")
+
+                if sell_pct > 100:
+                    raise ValueError("Percentage can't be greater than 100")
+
+                token_pk = Pubkey.from_string(mint) if isinstance(mint, str) else mint
+
+                dec_base = await self.router.get_decimals(mint)
+
+                bal_resp = await self.ctx.get_token_accounts_by_owner_json_parsed(
+                    keypair.pubkey(), TokenAccountOpts(mint=token_pk), Processed
+                )
+                if not bal_resp.value:
+                    raise RuntimeError("no balance")
+
+                token_balance = float(bal_resp.value[0].account.data.parsed["info"]["tokenAmount"]["uiAmount"] or 0)
+                if token_balance <= 0:
+                    raise RuntimeError("insufficient token balance")
+
+                sell_amount = token_balance * (sell_pct / 100)
+                if sell_amount <= 0:
+                    raise RuntimeError("sell amount too small")
+                
+                tokens_in = int(sell_amount * 10**dec_base)
+                state = await self.router.damm_v2.core.fetch_pool_state(pool)
+                swap_params = await self.router.damm_v2.build_swap_params(
+                    state, 
+                    pool, 
+                    mint, 
+                    tokens_in,
+                    keypair
+                )
+                ixs = await self.router.damm_v2.sell(swap_params, keypair=keypair, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["MeteoraDLMM"]:
+                sim, is_dlmm = True, True
+                state = await self.router.dlmm.core.fetch_pool_state(pool)
+                ixs = await self.router.dlmm.sell(mint, state, sell_pct, keypair=keypair, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["MeteoraDBC"] or dex == SUPPORTED_DEXES["Believe"]:
+                _, state = await self.router.meteora_dbc.fetch_state(mint)
+                ixs = await self.router.meteora_dbc.swap.sell(state, sell_pct, keypair=keypair, slippage_pct=slippage, return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["PumpFun"]:
+                token_pk = Pubkey.from_string(mint) if isinstance(mint, str) else mint
+                bal_resp = await self.ctx.get_token_accounts_by_owner_json_parsed(
+                    keypair.pubkey(), TokenAccountOpts(mint=token_pk), Processed
+                )
+                if not bal_resp.value:
+                    raise Exception("No token balance found")
+                
+                token_balance = float(bal_resp.value[0].account.data.parsed["info"]["tokenAmount"]["uiAmount"] or 0)
+                if token_balance <= 0:
+                    raise Exception("Insufficient token balance")
+                
+                sell_amount = token_balance * (sell_pct / 100)
+                token_amount = int(sell_amount * 10**6)
+                
+                price = await self.router.pump_fun.get_price(mint)
+                if price is None or price == "NotOnPumpFun" or price == "migrated":
+                    raise Exception(f"Cannot get price for {mint}")
+                
+                lamports_min_output = int(sell_amount * price * LAMPORTS_PER_SOL * float(1 - slippage/100))
+                creator = await self.router.get_pump_fun_creator(self.ctx, str(pool))
+                
+                ixs = await self.router.pump_fun.pump_sell(
+                    mint, pool, token_amount, lamports_min_output, creator, keypair=keypair, return_instructions=True
+                )
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["PumpSwap"]:
+                pool_keys, pool_type = await self.router.pump_swap_fetch_state(pool, self.ctx)
+                base_price, base_balance_tokens, quote_balance_sol = await self.router.pump_swap.fetch_pool_base_price(pool)
+                decimals_base = await self.router.get_decimals(mint)
+                decimals_quote = await self.router.get_decimals(pool_keys["quote_mint"])
+                pool_data = {
+                    "pool_pubkey": Pubkey.from_string(str(pool)),
+                    "token_base": Pubkey.from_string(pool_keys["base_mint"]),
+                    "token_quote": Pubkey.from_string(pool_keys["quote_mint"]),
+                    "pool_base_token_account": pool_keys["pool_base_token_account"],
+                    "pool_quote_token_account": pool_keys["pool_quote_token_account"],
+                    "base_balance_tokens": base_balance_tokens,
+                    "quote_balance_sol": quote_balance_sol,
+                    "decimals_base": decimals_base,
+                    "decimals_quote": decimals_quote,
+                }
+                if pool_type == "NEW":
+                    pool_data["coin_creator"] = Pubkey.from_string(pool_keys["coin_creator"])
+
+                if str(pool_keys["base_mint"]) == "So11111111111111111111111111111111111111112":
+                    ixs = await self.router.pump_swap.reversed_sell(pool_data, sell_pct, keypair, pool_type, slippage_pct=slippage, debug_prints=True, return_instructions=True)
+                else:
+                    ixs = await self.router.pump_swap.sell(pool_data, sell_pct, keypair, pool_type, slippage_pct=slippage, debug_prints=True, return_instructions=True)
+                print(ixs)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["RaydiumAMM"]:
+                ixs = await self.router.raydiumswap_v4.execute_sell_async(mint, keypair, int(sell_pct), int(slippage), return_instructions=True)
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["RayCLMM"]:
+                ixs = await self.router.clmm_swap.execute_clmm_sell_async(
+                    mint, keypair, int(sell_pct), int(slippage), pool_id=pool, return_instructions=True
+                )
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["RayCPMM"]:
+                ixs = await self.router.cpmm_swap.execute_cpmm_sell_async(
+                    mint, keypair, sell_pct, slippage_pct=slippage, pool_hint=pool, return_instructions=True
+                )
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            elif dex == SUPPORTED_DEXES["Launchpad"]:
+                ixs = await self.router.launchlab_swap.execute_lp_sell_async(
+                    mint, keypair, sell_pct, slippage_pct=slippage, pool_id=pool, return_instructions=True
+                )
+                versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+
+            if return_instructions:
+                return ixs
+
+            if versioned_message is None:
+                raise Exception("CobraSwaps | No versioned message found")
+
+            priority_fee = await self.priority_fee_levels(versioned_message)
+            logging.info(f"Currently using: {priority_fee_level} | Low: {priority_fee['low']:.8f} | Medium: {priority_fee['medium']:.8f} | High: {priority_fee['high']:.8f} | Turbo: {priority_fee['turbo']:.8f}")
+            priority_fee = priority_fee[priority_fee_level]
+            if priority_fee is None:
+                priority_fee = 0.000005
             
-            sell_amount = token_balance * (sell_pct / 100)
-            token_amount = int(sell_amount * 10**6)
-            
-            price = await self.router.pump_fun.get_price(mint)
-            if price is None or price == "NotOnPumpFun" or price == "migrated":
-                raise Exception(f"Cannot get price for {mint}")
-            
-            lamports_min_output = int(sell_amount * price * LAMPORTS_PER_SOL * float(1 - slippage/100))
-            creator = await self.router.get_pump_fun_creator(self.ctx, str(pool))
-            
-            ixs = await self.router.pump_fun.pump_sell(
-                mint, pool, token_amount, lamports_min_output, creator, keypair=keypair, return_instructions=True
-            )
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["PumpSwap"]:
-            pool_keys, pool_type = await self.router.pump_swap_fetch_state(pool, self.ctx)
-            base_price, base_balance_tokens, quote_balance_sol = await self.router.pump_swap.fetch_pool_base_price(pool)
-            decimals_base = await self.router.get_decimals(mint)
-            decimals_quote = await self.router.get_decimals(pool_keys["quote_mint"])
-            pool_data = {
-                "pool_pubkey": Pubkey.from_string(str(pool)),
-                "token_base": Pubkey.from_string(pool_keys["base_mint"]),
-                "token_quote": Pubkey.from_string(pool_keys["quote_mint"]),
-                "pool_base_token_account": pool_keys["pool_base_token_account"],
-                "pool_quote_token_account": pool_keys["pool_quote_token_account"],
-                "base_balance_tokens": base_balance_tokens,
-                "quote_balance_sol": quote_balance_sol,
-                "decimals_base": decimals_base,
-                "decimals_quote": decimals_quote,
-            }
-            if pool_type == "NEW":
-                pool_data["coin_creator"] = Pubkey.from_string(pool_keys["coin_creator"])
-            
-            if str(pool_keys["base_mint"]) == "So11111111111111111111111111111111111111112":
-                ixs = await self.router.pump_swap.reversed_sell(pool_data, sell_pct, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
-            else:
-                ixs = await self.router.pump_swap.sell(pool_data, sell_pct, keypair, pool_type, slippage_pct=slippage, return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["RaydiumAMM"]:
-            ixs = await self.router.raydiumswap_v4.execute_sell_async(mint, keypair, int(sell_pct), int(slippage), return_instructions=True)
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["RayCLMM"]:
-            ixs = await self.router.clmm_swap.execute_clmm_sell_async(
-                mint, keypair, int(sell_pct), int(slippage), pool_id=pool, return_instructions=True
-            )
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["RayCPMM"]:
-            ixs = await self.router.cpmm_swap.execute_cpmm_sell_async(
-                mint, keypair, sell_pct, slippage_pct=slippage, pool_hint=pool, return_instructions=True
-            )
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-        elif dex == SUPPORTED_DEXES["Launchpad"]:
-            ixs = await self.router.launchlab_swap.execute_lp_sell_async(
-                mint, keypair, sell_pct, slippage_pct=slippage, pool_id=pool, return_instructions=True
-            )
-            versioned_message = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+            if priority_fee > 0.01:
+                raise Exception("CobraSwaps | Priority fee is too high (Over 0.01 SOL)")
 
-        if return_instructions:
-            return ixs
+            if ixs:
+                lamports_fee = int(priority_fee * LAMPORTS_PER_SOL)
+                micro_lamports = compute_unit_price_from_total_fee(
+                    lamports_fee,
+                    compute_units=_DEFAULT_CU
+                )
 
-        if versioned_message is None:
-            raise Exception("CobraSwaps | No versioned message found")
+                ixs.append(set_compute_unit_limit(_DEFAULT_CU))
+                ixs.append(set_compute_unit_price(micro_lamports))
+                ver_msg = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
+                tx = VersionedTransaction(ver_msg, [keypair])
 
-        priority_fee = await self.priority_fee_levels(versioned_message)
-        logging.info(f"Currently using: {priority_fee_level} | Low: {priority_fee['low']:.8f} | Medium: {priority_fee['medium']:.8f} | High: {priority_fee['high']:.8f} | Turbo: {priority_fee['turbo']:.8f}")
-        priority_fee = priority_fee[priority_fee_level]
-        if priority_fee is None:
-            priority_fee = 0.000005
-        
-        if priority_fee > 0.01:
-            raise Exception("CobraSwaps | Priority fee is too high (Over 0.01 SOL)")
+                if sim:
+                    simulate_resp = await self.ctx.simulate_transaction(tx)
+                    if simulate_resp.value and simulate_resp.value.err:
+                        if not is_dlmm:
+                            logging.info(f"Simulation result: {simulate_resp.value}")
+                            raise Exception(f"Simulation failed: {simulate_resp.value.err}")
+                        else:
+                            return ("replay", False)
 
-        if ixs:
-            lamports_fee = int(priority_fee * LAMPORTS_PER_SOL)
-            micro_lamports = compute_unit_price_from_total_fee(
-                lamports_fee,
-                compute_units=_DEFAULT_CU
-            )
+                result = await self.ctx.send_transaction(tx, opts=TxOpts(skip_preflight=True, max_retries=0))
+                logging.info(f"Cobra | Sell transaction sent: {result.value}")
+                ok = await self._await_confirm(result.value)
+                logging.info(f"Cobra | Sell transaction confirmed: {ok}")
+                return (result.value, ok)
 
-            ixs.append(set_compute_unit_limit(_DEFAULT_CU))
-            ixs.append(set_compute_unit_price(micro_lamports))
-            ver_msg = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
-            tx = VersionedTransaction(ver_msg, [keypair])
-
-            if sim:
-                simulate_resp = await self.ctx.simulate_transaction(tx)
-                if simulate_resp.value and simulate_resp.value.err:
-                    if not is_dlmm:
-                        logging.info(f"Simulation result: {simulate_resp.value}")
-                        raise Exception(f"Simulation failed: {simulate_resp.value.err}")
-                    else:
-                        return ("replay", False)
-
-            result = await self.ctx.send_transaction(tx, opts=TxOpts(skip_preflight=True, max_retries=0))
-            logging.info(f"Cobra | Sell transaction sent: {result.value}")
-            ok = await self._await_confirm(result.value)
-            logging.info(f"Cobra | Sell transaction confirmed: {ok}")
-            return (result.value, ok)
-
-        return (None, False)
+            return (None, False)
+        except Exception as e:
+            logging.error(f"CobraSwaps | Error selling: {e}")
+            traceback.print_exc()
+            return (None, False)
 
     async def close(self):
         try:

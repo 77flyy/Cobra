@@ -154,7 +154,7 @@ class RaydiumCpmmCore:
             traceback.print_exc()
             return []
 
-    async def find_suitable_pool(self, mint: str | Pubkey, pools: list[str], sol_amount: float = 0.1) -> str:
+    async def find_suitable_pool(self, mint: str | Pubkey, pools: list[str], sol_amount: float = 0.000001) -> str:
         try:
             best_pool = None
             keys = None

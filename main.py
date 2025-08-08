@@ -15,6 +15,8 @@ from pathlib import Path
 from solders.keypair import Keypair # type: ignore
 try: from CobraRouter.CobraRouter.router.libutils._common import ADDR_TO_DEX; # type: ignore
 except: from CobraRouter.router.libutils._common import ADDR_TO_DEX; # type: ignore
+try: from CobraRouter.CobraRouter.router.libutils.cleaner import Cleaner; # type: ignore
+except: from CobraRouter.router.libutils.cleaner import Cleaner; # type: ignore
 
 print(f"""
 {cc.BRIGHT}{cc.LIGHT_BLACK}{cc.BG_WHITE}                                             {cc.RESET}
@@ -52,6 +54,7 @@ class CLISettings:
 
 class Cobra:
     def __init__(self, session: aiohttp.ClientSession):
+        self.cleaner = Cleaner()
         self.router = CobraRouter(HTTP_RPC, session)
         try: self.keypair = Keypair.from_base58_string(os.getenv("PRIVATE_KEY"));
         except: self.keypair = None
@@ -80,13 +83,15 @@ class Cobra:
                     sys.exit(1)
 
             while True:
+                print("")
                 cprint(f"1) Create a new wallet")
                 cprint(f"2) Grind a new vanity wallet")
                 cprint(f"3) Detect mint market")
                 cprint(f"4) Buy a mint")
                 cprint(f"5) Sell a mint")
                 cprint(f"6) List your mints")
-                cprint(f"7) Exit")
+                cprint(f"7) Burn a mint")
+                cprint(f"8) Exit")
 
                 cmd = cinput("Enter your choice")
                 if not cmd:
@@ -124,6 +129,8 @@ class Cobra:
                 elif cmd == "6":
                     await self.list_mints()
                 elif cmd == "7":
+                    await self.burn_mint()
+                elif cmd == "8":
                     await self.close()
                     sys.exit(0)
         except Exception as e:
@@ -135,17 +142,67 @@ class Cobra:
             logging.info(f"[+] Getting mint info...")
             mints = await self.router.list_mints(self.keypair.pubkey())
             if mints:
+                mints_dict = {}
+                to_sell = set()
                 for mint in mints:
-                    price = await self.router.get_price(str(mint))
-                    logging.info(f"[+] Mint: {mint} | Price: {price}")
+                    price = await self.router.get_price(str(mint), use_cache=True)
+                    if not price:
+                        to_sell.add(str(mint))
+                        continue
+                    mints_dict[str(mint)] = {"price": price}
+
+                balances = await self.router.swaps.get_multiple_balances(list(mints_dict.keys()), self.keypair.pubkey())
+                for mint, balances in balances.items():
+                    if str(mint) in mints_dict:
+                        mints_dict[str(mint)]["balance"] = balances[0]
+
+                for mint, info in mints_dict.items():
+                    logging.info(f"[+] Mint: {mint} | Price: {info['price']} | Balance: {info['balance']}")
             else:
                 logging.error("[-] No mints found")
         except Exception as e:
             logging.error(f"[-] Error: {e}")
             traceback.print_exc()
 
+    async def burn_mint(self):
+        try:
+            mint = cinput("Enter the mint address (or type `all` to burn all mints)")
+            if mint == "all":
+                mints = await self.router.list_mints(self.keypair.pubkey())
+                if not mints: return;
+                balances = await self.router.swaps.get_multiple_balances(list(mints), self.keypair.pubkey())
+                for mint, info in balances.items():
+                    logging.info(f"[+] Mint: {mint} | Balance: {info[0]}")
+                c = cinput(f"Would you like to burn these mints and recover SOL? (y/n)")
+                if c == "y":
+                    for mint, info in balances.items():
+                        balance_raw = info[1]
+                        decimals = await self.router.get_decimals(str(mint))
+                        sig, ok = await self.cleaner.close_token_account(self.router.async_client, self.keypair, mint, balance_raw, decimals)
+                        if ok:
+                            logging.info(f"[+] Burn transaction sent: https://solscan.io/tx/{sig}")
+                        else:
+                            logging.error("[-] Failed to send burn transaction")
+                return
+
+            logging.info(f"[!] Only burn mints that are not supported by Cobra.")
+            logging.info(f"[+] Listing token balance...")
+            balance, balance_raw, ok = await self.router.swaps.get_balance(str(mint), self.keypair.pubkey())
+            decimals = await self.router.get_decimals(str(mint))
+            logging.info(f"[+] Mint: {mint} | Balance: {balance} | Decimals: {decimals}")
+            c = cinput(f"Would you like to burn this unsupported mint and recover SOL? (y/n)")
+            if c == "y":
+                sig, ok = await self.cleaner.close_token_account(self.router.async_client, self.keypair, mint, balance_raw, decimals)
+                if ok:
+                    logging.info(f"[+] Burn transaction sent: https://solscan.io/tx/{sig}")
+                else:
+                    logging.error("[-] Failed to send burn transaction")
+        except Exception as e:
+            logging.error(f"[-] Error: {e}")
+            traceback.print_exc()
+
     async def detect_mint_market(self, mint: str):
-        info = await self.router.detect(mint)
+        info = await self.router.detect(mint, use_cache=True)
         if info:
             dex, pool = info
             if dex and pool:

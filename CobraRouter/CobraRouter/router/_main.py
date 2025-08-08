@@ -336,14 +336,10 @@ class Router:
 
     async def find_best_market_for_mint(self, mint: str):
         try:
-            dex_addr, authority, info = None, None, None
-            if str(mint) in self.local_cache:
-                authority, info = self.local_cache[str(mint)]
-            else:
-                authority, info = await self.get_mint_authority(mint)
-                if authority is None and info is None:
-                    raise Exception("find_best_market_for_mint: Mint not found")
-                self.local_cache[str(mint)] = (authority, info)
+            dex_addr = None
+            authority, info = await self.get_mint_authority(mint)
+            if authority is None and info is None:
+                raise Exception("find_best_market_for_mint: Mint not found")
             
             cprint(f"Mint: {mint} | Authority: {authority}")
             if authority in SUPPORTED_DEXES.values():
@@ -409,24 +405,28 @@ class Router:
         *,
         prefer_authority: bool = True,
         timeout: float | None = None,
-        exclude_pools: list[str] = []
+        exclude_pools: list[str] = [],
+        use_cache: bool = False
     ):
         """
+            Args:
+                mint: str
+                prefer_authority: bool
+                timeout: float | None
+                exclude_pools: list[str]
+                use_cache: bool <- if True, will use local cache to avoid duplicate RPC calls
+
         Race all known DEX route probes concurrently and return the first that yields
         a usable (dex_addr, pool). Optional `prefer_authority` short-circuits when
         mint authority already maps to a known DEX (PumpFun / Launchpad / Believe).
         `timeout` caps total wait (seconds). None = wait until all done.
         """
         try:
+            if use_cache and str(mint) in self.local_cache:
+                return self.local_cache[str(mint)]
+            
             # 0. authority hint (fast, low RPC cost)
-            dex_addr, authority, info = None, None, None
-            if str(mint) in self.local_cache:
-                authority, info = self.local_cache[str(mint)]
-            else:
-                authority, info = await self.get_mint_authority(mint)
-                if authority is None and info is None:
-                    raise Exception("find_best_market_for_mint: Mint not found")
-                self.local_cache[str(mint)] = (authority, info)
+            authority, info = await self.get_mint_authority(mint)
             if authority == "INVALID":
                 pass
             elif authority is None and info is None:
@@ -519,12 +519,14 @@ class Router:
                         continue
 
                     if dex_addr is not None and pool is not None:
-                        winner = next((n for n, t in tasks.items() if t is fut), "?")
-                        logging.info("Route winner (%s): %s -> %s", winner, dex_addr, pool)
+                        logging.info(f"Route found: {ADDR_TO_DEX[dex_addr]} -> {pool}")
                         for t in tasks.values():
                             if t is not fut and not t.done():
                                 t.cancel()
                         await asyncio.gather(*tasks.values(), return_exceptions=True)
+                        if use_cache and mint not in self.local_cache:
+                            logging.info("Caching %s -> %s", mint, (dex_addr, pool))
+                            self.local_cache[str(mint)] = (dex_addr, pool)
                         return (dex_addr, pool)
 
             except asyncio.TimeoutError:

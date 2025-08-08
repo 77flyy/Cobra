@@ -100,6 +100,16 @@ class CobraRouter:
             return False
 
     async def get_priority_fee(self, msg: VersionedMessage | None = None):
+        """
+            Args:
+                msg: VersionedMessage | None
+            Returns:
+                dict:
+                    low: float
+                    medium: float
+                    high: float
+                    turbo: float
+        """
         while not self.warmed_up:
             logging.info("Warming up RPC cache...")
             if not await self.ping():
@@ -109,9 +119,17 @@ class CobraRouter:
                 break
         return await self.swaps.priority_fee_levels(msg)
 
-    async def get_price(self, mint: str):
+    async def get_decimals(self, mint: str | Pubkey):
         try:
-            dex, pool = await self.detect(mint)
+            decimals = await self.router.get_decimals(mint)
+            return decimals
+        except Exception as e:
+            logging.error(f"Error getting decimals: {e}")
+            return None
+
+    async def get_price(self, mint: str, **kwargs):
+        try:
+            dex, pool = await self.detect(mint, **kwargs)
             if not dex or not pool:
                 raise ValueError(f"No pool found for mint: {mint}")
             return await self.swaps.get_price(mint, pool, dex)
@@ -133,8 +151,9 @@ class CobraRouter:
                 continue
             else:
                 break
+        use_cache = kwargs.get("use_cache", False)
         exclude_pools = kwargs.get("exclude_pools", [])
-        dex, pool = await self.detector._detect(mint, exclude_pools=exclude_pools)
+        dex, pool = await self.detector._detect(mint, exclude_pools=exclude_pools, use_cache=use_cache)
         return dex, pool
     
     async def swap(self, action: str, mint: str, pool: str, slippage: float, priority_level: str, dex: str, keypair: Keypair, sell_pct: int = 100, sol_amount_in: float = 0.0001):
