@@ -173,7 +173,7 @@ class ClmmCore:
                 commitment=Processed
             )
             if not mint_info:
-                print("Error: Failed to fetch mint info (tried to fetch token decimals).")
+                logging.info("Error: Failed to fetch mint info (tried to fetch token decimals).")
                 return None
             dec_base = mint_info.value.data.parsed['info']['decimals']
             return int(dec_base)
@@ -235,7 +235,7 @@ class ClmmCore:
             }
 
         except Exception as exc:
-            print(f"get_price() error: {exc}")
+            logging.info(f"get_price() error: {exc}")
             traceback.print_exc()
             return None
 

@@ -11,7 +11,7 @@ try: from damm_core import DAMM1Core, TOKEN_PROGRAM_ID
 except: from .damm_core import DAMM1Core, TOKEN_PROGRAM_ID
 from solana.rpc.types import TxOpts, TokenAccountOpts
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price # type: ignore
-
+import logging
 RENT_EXEMPT     = 2039280
 ACCOUNT_SIZE    = 165
 SOL_DECIMALS    = 1e9
@@ -38,7 +38,7 @@ class MeteoraDamm1:
             return info.value.owner
         except Exception as e:
             traceback.print_exc()
-            print(f"Failed to get token program id: {e}")
+            logging.info(f"Failed to get token program id: {e}")
             return TOKEN_PROGRAM_ID
 
     async def buy(
@@ -120,12 +120,12 @@ class MeteoraDamm1:
             tx       = VersionedTransaction(msg, [keypair])
 
             result = await self.client.send_transaction(tx, opts=TxOpts(skip_preflight=True, max_retries=0))
-            print(f"Debug DAMM1 | Swap transaction sent: {result.value}")
+            logging.info(f"Debug DAMM1 | Swap transaction sent: {result.value}")
             
             return result.value
 
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             traceback.print_exc()
             return None
 
@@ -166,7 +166,7 @@ class MeteoraDamm1:
                 commitment=Processed
             )
             if not mint_info:
-                print("Error: Failed to fetch mint info (tried to fetch token decimals).")
+                logging.info("Error: Failed to fetch mint info (tried to fetch token decimals).")
                 return
             dec_base = mint_info.value.data.parsed['info']['decimals']
 
@@ -187,7 +187,7 @@ class MeteoraDamm1:
                 raise RuntimeError("sell amount too small")
             
             tokens_in = int(sell_amount * 10**dec_base)
-            print(f"Selling {tokens_in} tokens")
+            logging.info(f"Selling {tokens_in} tokens")
 
             seed = base64.urlsafe_b64encode(os.urandom(12)).decode()
             temp_wsol = Pubkey.create_with_seed(keypair.pubkey(), seed, TOKEN_PROGRAM_ID)
@@ -230,12 +230,12 @@ class MeteoraDamm1:
             msg      = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
             tx       = VersionedTransaction(msg, [keypair])
             result = await self.client.send_transaction(tx, opts=TxOpts(skip_preflight=True, max_retries=0))
-            print(f"Debug DAMM1 | Swap transaction sent: {result.value}")
+            logging.info(f"Debug DAMM1 | Swap transaction sent: {result.value}")
 
             return result.value
 
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             traceback.print_exc()
             return None
 
@@ -243,5 +243,5 @@ class MeteoraDamm1:
         try:
             self.client.close()
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             return None

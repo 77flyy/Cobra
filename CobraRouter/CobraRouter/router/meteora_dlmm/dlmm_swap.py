@@ -9,7 +9,7 @@ from solders.transaction import Transaction, VersionedTransaction # type: ignore
 from solders.message import MessageV0 # type: ignore
 from solana.rpc.types import TxOpts, TokenAccountOpts
 from solders.compute_budget import set_compute_unit_limit, set_compute_unit_price # type: ignore
-
+import logging
 try: from dlmm_bin import DLMMBin
 except: from .dlmm_bin import DLMMBin
 
@@ -43,7 +43,7 @@ class MeteoraDLMM:
             return info.value.owner
         except Exception as e:
             traceback.print_exc()
-            print(f"Failed to get token program id: {e}")
+            logging.info(f"Failed to get token program id: {e}")
             return TOKEN_PROGRAM_ID
         
     async def buy(
@@ -130,12 +130,12 @@ class MeteoraDLMM:
             msg      = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
             tx       = VersionedTransaction(msg, [keypair])
             result = await self.client.send_transaction(tx, opts=TxOpts(skip_preflight=True, max_retries=0))
-            print(f"Debug DLMM | Swap transaction sent: {result.value}")
+            logging.info(f"Debug DLMM | Swap transaction sent: {result.value}")
             ok = await self._await_confirm(result.value)
-            print(f"Debug DLMM | Swap transaction confirmed: {ok}")
+            logging.info(f"Debug DLMM | Swap transaction confirmed: {ok}")
             return (result.value, ok)
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             traceback.print_exc()
             return None
 
@@ -176,7 +176,7 @@ class MeteoraDLMM:
                 commitment=Processed
             )
             if not mint_info:
-                print("Error: Failed to fetch mint info (tried to fetch token decimals).")
+                logging.info("Error: Failed to fetch mint info (tried to fetch token decimals).")
                 return
             dec_base = mint_info.value.data.parsed['info']['decimals']
 
@@ -200,7 +200,7 @@ class MeteoraDLMM:
                 raise RuntimeError("sell amount too small")
             
             tokens_in = int(sell_amount * 10**dec_base)
-            print(f"Selling {tokens_in} tokens")
+            logging.info(f"Selling {tokens_in} tokens")
 
             seed = base64.urlsafe_b64encode(os.urandom(12)).decode()
             temp_wsol = Pubkey.create_with_seed(keypair.pubkey(), seed, TOKEN_PROGRAM_ID)
@@ -246,13 +246,13 @@ class MeteoraDLMM:
             msg      = MessageV0.try_compile(keypair.pubkey(), ixs, [], blockhash)
             tx       = VersionedTransaction(msg, [keypair])
             result = await self.client.send_transaction(tx, opts=TxOpts(skip_preflight=True, max_retries=0))
-            print(f"Debug DLMM | Swap transaction sent: {result.value}")
+            logging.info(f"Debug DLMM | Swap transaction sent: {result.value}")
             
             ok = await self._await_confirm(result.value)
-            print(f"Debug DLMM | Swap transaction confirmed: {ok}")
+            logging.info(f"Debug DLMM | Swap transaction confirmed: {ok}")
             return (result.value, ok)
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             traceback.print_exc()
             return None
 
@@ -268,4 +268,4 @@ class MeteoraDLMM:
         try:
             await self.client.close()
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")

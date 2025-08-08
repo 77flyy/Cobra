@@ -1,4 +1,4 @@
-# pool.py
+import logging
 from solana.rpc.types import MemcmpOpts, DataSliceOpts
 from solana.rpc.async_api import AsyncClient
 from solders.pubkey import Pubkey # type: ignore
@@ -20,7 +20,7 @@ async def pools_for_mint(mint_pk: str, ctx: AsyncClient):
         )
         return [str(acc.pubkey) for acc in resp.value]
     except solana.exceptions.SolanaRpcException:
-        print(f"Error in pools_for_mint: We don't know the cause yet, but it's probably because the pool is not found, or the RPC is rate limited.")
+        logging.info(f"Error in pools_for_mint: We don't know the cause yet, but it's probably because the pool is not found, or the RPC is rate limited.")
         return []
 
 async def find_pool(mint_pk: str, ctx: AsyncClient):

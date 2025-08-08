@@ -72,6 +72,8 @@ class Cobra:
                 cprint(f"5) Sell a mint")
 
                 cmd = cinput("Enter your choice")
+                if not cmd:
+                    return
                 cmd = cmd.replace(")", "").lstrip()
 
                 if cmd == "1":
@@ -154,6 +156,10 @@ class Cobra:
                 self.net.run() if self.net is not None else self.loop(),
                 self.CLI() if RUN_AS_CLI == "True" else self.loop(),
             )
+        except EOFError:
+            logging.info("[-] EOFError detected, closing Cobra...")
+            await self.close()
+            sys.exit(0)
         finally:
             await self.close()
 

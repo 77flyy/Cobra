@@ -9,6 +9,7 @@ from solana.rpc.commitment import Processed, Confirmed
 from spl.token.instructions import get_associated_token_address
 from solders.instruction import Instruction, AccountMeta # type: ignore
 import solana.exceptions
+import logging
 WSOL_MINT = Pubkey.from_string("So11111111111111111111111111111111111111112")
 DAMM_V1_PROGRAM_ID = Pubkey.from_string("Eo7WjKq67rjJQSZxS6z3YkapzY3eMj6Xy8X5EQVn5UaB")
 VAULT_PROGRAM_ID = Pubkey.from_string("24Uqj9JCLxUeoC3hGfh5W3s9FM9uCHDS2SG3LYwBpyTi")
@@ -169,7 +170,7 @@ class DAMM1Core:
             if pool_addr is None:
                 pool_addr = await self.find_pool_by_mint(mint_pk)
                 if pool_addr is None:
-                    print("get_price(): no suitable pool found")
+                    logging.info("get_price(): no suitable pool found")
                     return None
 
             pool_pk: Pubkey = pool_addr if isinstance(pool_addr, Pubkey) else Pubkey.from_string(pool_addr)
@@ -179,7 +180,7 @@ class DAMM1Core:
             # ------------------------------------------------------------
             state = await self.fetch_pool_state(pool_pk)
             if state is None:
-                print("get_price(): failed to load pool state")
+                logging.info("get_price(): failed to load pool state")
                 return None
 
             a_mint = Pubkey.from_string(state["token_a_mint"])
@@ -195,7 +196,7 @@ class DAMM1Core:
 
             reserve_a, reserve_b = await self.async_get_pool_reserves(a_lp_vault, b_lp_vault)
             if reserve_a == 0 or reserve_b == 0:
-                print("get_price(): pool has no liquidity")
+                logging.info("get_price(): pool has no liquidity")
                 return None
 
             # ------------------------------------------------------------
@@ -209,7 +210,7 @@ class DAMM1Core:
                 token_reserve = reserve_a
             else:
                 # The helper is intended for SOL/token pools only
-                print("get_price(): neither side is wSOL – unsupported")
+                logging.info("get_price(): neither side is wSOL – unsupported")
                 return None
 
             price         = sol_reserve / token_reserve          # SOL ÷ token (inverse)
@@ -222,7 +223,7 @@ class DAMM1Core:
             }
 
         except Exception as exc:
-            print(f"get_price() error: {exc}")
+            logging.info(f"get_price() error: {exc}")
             traceback.print_exc()
             return None
 
@@ -257,7 +258,7 @@ class DAMM1Core:
             ui_b = infos.value[1].data.parsed["info"]["tokenAmount"]["uiAmount"] # type: ignore
             return float(ui_a or 0), float(ui_b or 0) # type: ignore
         except Exception as e:
-            print(f"Error fetching vault reserves: {e}")
+            logging.info(f"Error fetching vault reserves: {e}")
             traceback.print_exc()
             return 0.0, 0.0
 
@@ -278,7 +279,7 @@ class DAMM1Core:
             pdict["pool"] = pool_addr
             return pdict
         except Exception as e:
-            print(f"Error in fetch_pool_state: {e}")
+            logging.info(f"Error in fetch_pool_state: {e}")
             traceback.print_exc()
             return None
 
@@ -318,7 +319,7 @@ class DAMM1Core:
                         continue
                     token_a_vault = Pubkey.from_string(pool_state["a_vault_lp"])
                     token_b_vault = Pubkey.from_string(pool_state["b_vault_lp"])
-                    print(f"pool_addr: {pool_addr}")
+                    logging.info(f"pool_addr: {pool_addr}")
                     
                     reserve_a, reserve_b = await self.async_get_pool_reserves(token_a_vault, token_b_vault)
                     
@@ -347,16 +348,16 @@ class DAMM1Core:
                         best_pool = pool_addr
                         break
                     else:
-                        print(f"❌ Insufficient liquidity (need {required_tokens:,.6f} tokens, {sol_amount} SOL)")
+                        logging.info(f"❌ Insufficient liquidity (need {required_tokens:,.6f} tokens, {sol_amount} SOL)")
                         
                 except Exception as e:
-                    print(f"Error processing pool {pool_addr}: {e}")
+                    logging.info(f"Error processing pool {pool_addr}: {e}")
                     continue
 
             return best_pool
         except solana.exceptions.SolanaRpcException as e:
             return None
         except Exception as e:
-            print(f"Error in pool scanning: {e}")
+            logging.info(f"Error in pool scanning: {e}")
             traceback.print_exc()
             return None

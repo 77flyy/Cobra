@@ -1,7 +1,7 @@
 import os, base64, asyncio, traceback
 import struct
 from typing import Tuple
-
+import logging
 from solana.rpc.types import TokenAccountOpts, TxOpts
 from solana.rpc.commitment import Processed, Confirmed
 from solana.rpc.async_api import AsyncClient
@@ -46,7 +46,7 @@ class RaydiumLaunchpadSwap:
             return info.value.owner
         except Exception as e:
             traceback.print_exc()
-            print(f"Failed to get token program id: {e}")
+            logging.info(f"Failed to get token program id: {e}")
             return TOKEN_PROGRAM
 
     @staticmethod
@@ -100,7 +100,7 @@ class RaydiumLaunchpadSwap:
 
         expected = self.core.calculate_constant_product_swap(keys, sol_lamports / SOL_DECIMALS)
         min_out  = int(expected * (1 - slippage_pct/100) * 10**keys.decimals_a)
-        print(f"expected: {expected}, min_out: {min_out}")
+        logging.info(f"expected: {expected}, min_out: {min_out}")
 
         seed = base64.urlsafe_b64encode(os.urandom(12)).decode()
         temp_wsol = Pubkey.create_with_seed(keypair.pubkey(), seed, TOKEN_PROGRAM)
@@ -227,7 +227,7 @@ class RaydiumLaunchpadSwap:
         min_sol_out = int(expected_sol * (1 - slippage_pct/100) * SOL_DECIMALS)
         token_amount_raw = int(sell_amount * 10**keys.decimals_a)
         
-        print(f"Selling: {sell_amount} tokens, expected SOL: {expected_sol}, min SOL out: {min_sol_out}")
+        logging.info(f"Selling: {sell_amount} tokens, expected SOL: {expected_sol}, min SOL out: {min_sol_out}")
 
         seed = base64.urlsafe_b64encode(os.urandom(12)).decode()
         temp_wsol = Pubkey.create_with_seed(keypair.pubkey(), seed, TOKEN_PROGRAM)

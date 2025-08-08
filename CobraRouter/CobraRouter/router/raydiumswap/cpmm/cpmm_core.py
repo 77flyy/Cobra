@@ -14,7 +14,7 @@ from solana.rpc.types import (
     MemcmpOpts
 )
 from construct import Bytes, Int8ul, Int64ul, Struct as cStruct
-
+import logging
 
 CPMM_PROGRAM_ID = Pubkey.from_string("CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C")
 WSOL_MINT        = Pubkey.from_string("So11111111111111111111111111111111111111112")
@@ -100,7 +100,7 @@ class RaydiumCpmmCore:
             )
         except Exception as exc:
             traceback.print_exc()
-            print(f"[CPMM] pool-decode failed: {exc}")
+            logging.info(f"[CPMM] pool-decode failed: {exc}")
             return None
 
     async def get_price(self, pool_addr: str | Pubkey):
@@ -145,12 +145,12 @@ class RaydiumCpmmCore:
                     pools.extend(str(acc.pubkey) for acc in resp.value[:limit])
             return pools
         except solana.exceptions.SolanaRpcException as e:
-            print(f"Error in find_cpmm_pools_by_mint: We don't know the cause yet, but it's probably because the pool is not found, or the RPC is rate limited.")
+            logging.info(f"Error in find_cpmm_pools_by_mint: We don't know the cause yet, but it's probably because the pool is not found, or the RPC is rate limited.")
             if retry:
                 return []
             return await self.find_cpmm_pools_by_mint(mint, limit + 1000, retry=True)
         except Exception as e:
-            print(f"Error in find_cpmm_pools_by_mint: {e}")
+            logging.info(f"Error in find_cpmm_pools_by_mint: {e}")
             traceback.print_exc()
             return []
 
@@ -166,10 +166,10 @@ class RaydiumCpmmCore:
                     token_a_mint = keys.mint_a
                     token_b_mint = keys.mint_b
 
-                    print(f"\nPool: {pool}")
+                    logging.info(f"\nPool: {pool}")
                     
                     if reserve_a <= 0 or reserve_b <= 0:
-                        print("Skipping pool with zero reserves")
+                        logging.info("Skipping pool with zero reserves")
                         continue
                     
                     if token_a_mint == mint_pk and token_b_mint == WSOL_MINT:
@@ -177,16 +177,16 @@ class RaydiumCpmmCore:
                         sol_reserve = reserve_b
                         price_per_sol = token_reserve / sol_reserve if sol_reserve > 0 else 0
                         required_tokens = sol_amount * price_per_sol
-                        print(f"Price per SOL: {price_per_sol:,.2f} tokens, Required tokens for {sol_amount} SOL: {required_tokens:,.6f}")
+                        logging.info(f"Price per SOL: {price_per_sol:,.2f} tokens, Required tokens for {sol_amount} SOL: {required_tokens:,.6f}")
                         
                     elif token_b_mint == mint_pk and token_a_mint == WSOL_MINT:
                         sol_reserve = reserve_a
                         token_reserve = reserve_b
                         price_per_sol = token_reserve / sol_reserve if sol_reserve > 0 else 0
                         required_tokens = sol_amount * price_per_sol
-                        print(f"Price per SOL: {price_per_sol:,.2f} tokens, Required tokens for {sol_amount} SOL: {required_tokens:,.6f}")
+                        logging.info(f"Price per SOL: {price_per_sol:,.2f} tokens, Required tokens for {sol_amount} SOL: {required_tokens:,.6f}")
                     else:
-                        print(f"Pool doesn't contain SOL, skipping")
+                        logging.info(f"Pool doesn't contain SOL, skipping")
                         continue
                     
                     if (
@@ -194,19 +194,19 @@ class RaydiumCpmmCore:
                         and token_reserve > required_tokens
                         and sol_reserve > sol_amount
                     ):
-                        print(f"✅ Pool has sufficient liquidity!")
+                        logging.info(f"✅ Pool has sufficient liquidity!")
                         best_pool = pool
                         break
                     else:
-                        print(f"❌ Insufficient liquidity (need {required_tokens:,.6f} tokens, {sol_amount} SOL)")
+                        logging.info(f"❌ Insufficient liquidity (need {required_tokens:,.6f} tokens, {sol_amount} SOL)")
                 await asyncio.sleep(0.1)
                 
             return (best_pool, keys)
         except solana.exceptions.SolanaRpcException:
-            print(f"Error in find_suitable_pool: We don't know the cause yet, but it's probably because the pool is not found, or the RPC is rate limited.")
+            logging.info(f"Error in find_suitable_pool: We don't know the cause yet, but it's probably because the pool is not found, or the RPC is rate limited.")
             return None
         except Exception as e:
-            print(f"Error in pool scanning: {e}")
+            logging.info(f"Error in pool scanning: {e}")
             traceback.print_exc()
             return None
 

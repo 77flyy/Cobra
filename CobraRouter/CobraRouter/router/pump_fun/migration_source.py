@@ -17,7 +17,6 @@ async def find_pumpswap_pools(
     client: AsyncClient,
     base_mint: str,
     quote_mint: Optional[str] = None,
-    retry: bool = False
 ) -> List[Dict[str, Any]]:
     try:
         """On-chain lookup of PumpSwapAMM pools for base (and optional quote)."""
@@ -36,11 +35,7 @@ async def find_pumpswap_pools(
         return [{"pubkey": str(acc.pubkey), "account": acc.account}
                 for acc in resp.value]
     except SolanaRpcException as e:
-        print(f"Couldn't find a pumpswap pool for {base_mint}: {e}")
-        if not retry:
-            return await find_pumpswap_pools(client, base_mint, quote_mint, retry=True)
-        else:
-            return []
+        return []
 
 async def find_raydium_pools(
     session: aiohttp.ClientSession,

@@ -5,5 +5,6 @@
 
 from .main import CobraNET
 from .db_hook import TGDBHook
+from ._helius_api import get_token_info
 
-__all__ = ["CobraNET", "TGDBHook"]
+__all__ = ["CobraNET", "TGDBHook", "get_token_info"]

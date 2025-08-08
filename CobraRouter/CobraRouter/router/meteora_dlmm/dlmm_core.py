@@ -12,6 +12,7 @@ from construct import (
 try: from dlmm_bin import DLMMBin, BitmapExtLike, derive_bitmap_ext_pda
 except: from .dlmm_bin import DLMMBin, BitmapExtLike, derive_bitmap_ext_pda
 from decimal import Decimal, getcontext
+import logging
 getcontext().prec = 80
 
 BASIS_POINT_MAX = 10_000 # 1 bp = 0.01 %
@@ -251,7 +252,7 @@ class DLMMCore:
             pdict["pool"] = str(pool_addr)
             return pdict
         except Exception as e:
-            print(f"Error in fetch_pool_state: {e}")
+            logging.info(f"Error in fetch_pool_state: {e}")
             traceback.print_exc()
             return None
 
@@ -263,7 +264,7 @@ class DLMMCore:
                 commitment=Processed
             )
             if not mint_info:
-                print("Error: Failed to fetch mint info (tried to fetch token decimals).")
+                logging.info("Error: Failed to fetch mint info (tried to fetch token decimals).")
                 return None
             dec_base = mint_info.value.data.parsed['info']['decimals']
             return int(dec_base)
@@ -330,7 +331,7 @@ class DLMMCore:
             }
 
         except Exception as exc:
-            print(f"get_price() error: {exc}")
+            logging.info(f"get_price() error: {exc}")
             traceback.print_exc()
             return None
 
@@ -447,7 +448,7 @@ class DLMMCore:
             ui_b = infos.value[1].data.parsed["info"]["tokenAmount"]["uiAmount"]
             return float(ui_a or 0), float(ui_b or 0)
         except Exception as e:
-            print(f"Error fetching vault reserves: {e}")
+            logging.info(f"Error fetching vault reserves: {e}")
             traceback.print_exc()
             return 0.0, 0.0
 
@@ -466,26 +467,26 @@ class DLMMCore:
                         continue
                 reserveX = self.derive_reserve_pda(pool, mint)
                 reserveY = self.derive_reserve_pda(pool, WSOL_MINT)
-                print(f"ReserveX: {reserveX}, ReserveY: {reserveY}")
+                logging.info(f"ReserveX: {reserveX}, ReserveY: {reserveY}")
                 reserveXamount, reserveYamount = await self.async_get_pool_reserves(reserveX, reserveY)
                 if reserveXamount <= 0 or reserveYamount <= 0.25:
-                    print("Skipping pool with low/zero reserves (>=0.25 SOL)")
+                    logging.info("Skipping pool with low/zero reserves (>=0.25 SOL)")
                     continue
                 
                 token_reserve = reserveXamount
                 sol_reserve = reserveYamount
                 price_per_sol = token_reserve / sol_reserve if sol_reserve > 0 else 0
                 required_tokens = sol_amount * price_per_sol
-                print(f"Price per SOL: {price_per_sol:,.2f} tokens, Required tokens for {sol_amount} SOL: {required_tokens:,.6f}")
+                logging.info(f"Price per SOL: {price_per_sol:,.2f} tokens, Required tokens for {sol_amount} SOL: {required_tokens:,.6f}")
                 
                 if (
                     (required_tokens > 0 and price_per_sol > 0.0)
                     and token_reserve > required_tokens
                     and sol_reserve > sol_amount
                 ):
-                    print(f"✅ Pool has sufficient liquidity!")
+                    logging.info(f"✅ Pool has sufficient liquidity!")
                     return pool, reserveX, reserveY
             return None, None, None
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             return None, None, None

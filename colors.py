@@ -103,7 +103,7 @@ def cinput(string, color=ColorCodes.CYAN, b=False, maxlen=None) -> str:
         return ''.join(buf) if buf else None
     except EOFError:
         print("\n")
-        exit(0)
+        return None
 
 def rinput(color=ColorCodes.CYAN):
     try:
@@ -111,4 +111,4 @@ def rinput(color=ColorCodes.CYAN):
         return r
     except EOFError:
         print("\n")
-        exit(0)
+        return None

@@ -1,7 +1,9 @@
 site_name: Cobra Docs
 theme:
   name: material
-  palette:
+  logo: imgs/cobradocs.png
+  favicon: imgs/favicon.ico
+  palette:  
     - scheme: default
       primary: blue
       accent: blue

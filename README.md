@@ -30,10 +30,10 @@ Clink any market to see their respective implementations, or find them here: [Co
 
 Cobra composes of 3 parts:
 - CobraRouter
-- CobraNET
-- CobraWallets
+- CobraNET (Optional)
+- CobraWallets (Optional)
 
-**and a CLI, a Command Line Interface wrapper around [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) and [CobraWallets](https://github.com/FLOCK4H/Cobra/tree/main/CobraWallets/)**
+**and a CLI, a Command Line Interface wrapper around [CobraRouter](https://github.com/FLOCK4H/Cobra/tree/main/CobraRouter/CobraRouter) and [CobraWallets](https://github.com/FLOCK4H/Cobra/tree/main/CobraWallets/):**
 
 <img width="1075" height="447" alt="image" src="https://github.com/user-attachments/assets/58dc5704-fcf7-4272-a34d-15785b91cf4f" />
 
@@ -63,44 +63,7 @@ $ cd CobraRouter
 $ pip install .
 ```
 
-Using the `Router(ctx: AsyncClient, session: aiohttp.ClientSession)` class requires the `secrets.env` file that includes:
-
-`secrets.env`
-```
-HELIUS_API_KEY="your-helius-free-or-not-api-key" 
-```
-
-<details>
-    <summary><b> (click) Alternatively, you can hardcode the helius key into the module and reinstall.</b></summary>
-
-To hardcode the key change the line `HELIUS_API_KEY = os.getenv("HELIUS_API_KEY")` to `HELIUS_API_KEY = "your-api-key-here"`
-
-`CobraRouter/router/libutils/_helius_api.py`
-```python
-import asyncio
-...
-
-load_dotenv("secrets.env") # will walk down to find the API key, if doesn't work for some reason, please manually set the API key below
-
-# HELIUS_API_KEY = "5exxxxx-your-api-key-here"
-HELIUS_API_KEY = os.getenv("HELIUS_API_KEY") # <- Change to string. e.g. "helius-api-key-here"
-
-if not HELIUS_API_KEY:
-    raise ValueError("HELIUS_API_KEY is not set in secrets.env | Or we couldn't find it, please manually set the API key in `CobraRouter/router/libutils/_helius_api.py`")
-```
-
-To reinstall:
-
-```bash
-# You have to be inside CobraRouter folder
-
-$ pip uninstall cobra-router -y
-$ pip install .
-```
-    
-</details>
-
-**Example usage:**
+## 3. Usage:
 
 ```python
 from CobraRouter.detect import CobraDetector
@@ -133,7 +96,7 @@ BMBcZ9GWMCi9HaCE7BagrLxakzffy6fAGdEpihLRfVPw
 ('675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8', 'BMBcZ9GWMCi9HaCE7BagrLxakzffy6fAGdEpihLRfVPw')
 ```
 
-More in the documentation (_In progress_).
+Learn how to interact with the library: **[Cobra Documentation](https://flock4h.github.io/Cobra)**
 
 </details>
 
@@ -143,24 +106,20 @@ More in the documentation (_In progress_).
 
 ## 2. Configure the `secrets.env` file:
 
-> Required variables are: `RUN_AS_CLI`, `HTTP_RPC`, `HELIUS_API_KEY` and `PRIVATE_KEY`.</br> 
+> Required variables are: `RUN_AS_CLI`, `HTTP_RPC`, and `PRIVATE_KEY`.</br> 
 > Helius can be free tier.</br>
 > **Current fastest HTTP RPC Provider:** [Apewise](https://apewise.org)
 
-**In `secrets.env` you can control `SLIPPAGE`, which is 1..100 range, and `PRIORITY_FEE_LEVEL` which is a String and options are: `low`, `medium`, `high`, `turbo`.**
+**Create or edit `secrets.env` file; Here you can control `SLIPPAGE`, which is 1..100 range, and `PRIORITY_FEE_LEVEL` which is a String and options are: `low`, `medium`, `high`, `turbo`.**
 
 ```
 RUN_AS_CLI=True
-BOT_TOKEN=
 HTTP_RPC="https://api.apewise.org/rpc?api-key=" # apewise.org -> fastest right now
-
-# For getting mint authority we use `getAsset` from Helius off-chain API, Free Tier works just fine:
-HELIUS_API_KEY="your-helius-free-or-not-api-key" 
 
 # CLI CONFIG SECTION
 PRIVATE_KEY=2wY3abcde5Pj4xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-SLIPPAGE=30 # Set if using CLI
-PRIORITY_FEE_LEVEL="high" # Set if using CLI | "low", "medium", "high", "turbo"
+SLIPPAGE=30
+PRIORITY_FEE_LEVEL="high" # "low", "medium", "high", "turbo"
 ```
 
 ## 3. Run the CLI

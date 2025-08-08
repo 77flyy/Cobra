@@ -5,13 +5,11 @@ import logging
 import os
 from dotenv import load_dotenv
 
-load_dotenv("secrets.env") # will walk down to find the API key, if doesn't work for some reason, please manually set the API key below
+# !!! Helius API is only used in CobraNET
 
-# HELIUS_API_KEY = "5exxxxx-your-api-key-here"
+load_dotenv("secrets.env")
+
 HELIUS_API_KEY = os.getenv("HELIUS_API_KEY")
-
-if not HELIUS_API_KEY:
-    raise ValueError("HELIUS_API_KEY is not set in secrets.env | Or we couldn't find it, please manually set the API key in `CobraRouter/router/libutils/_helius_api.py`")
 
 class Exceptions:
     class InvalidMint(Exception):
@@ -26,7 +24,7 @@ async def post_get_asset(mint_id, session):
         data = await res.json()
         return data
     except Exception as e:
-        print(e)
+        logging.info(e)
         return None
     
 async def get_token_info(mint_id, session):
@@ -50,25 +48,11 @@ async def get_token_info(mint_id, session):
     except Exception as e:
         return {"error": str(e)}
     
-async def get_mint_authority(session: aiohttp.ClientSession, mint: str):
-    try:
-        info = await get_token_info(mint, session)
-        if info and "program" in info:
-            return (info["program"], info)
-        else:
-            logging.error(f"Failed to get mint authority for {mint}, err: {info}")
-            return ("INVALID", "INVALID")
-    except Exceptions.InvalidMint:
-        logging.info(f"This mint probably doesn't exist: {mint}, you can check on https://solscan.io/token/{mint}")
-        return (None, None)
-    except Exception as e:
-        logging.error(f"Error fetching mint authority: {e}")
-
 async def main():
     async with aiohttp.ClientSession() as session:
         # {'name': 'Cheetocoin', 'symbol': 'Cheetocoin', 'supply': '999002142162258', 'decimals': 6}
         data = await get_token_info("qQkRz3BeTQMpFNxmt8w7ZQnpXV9bgtF2JHGnSpppump", session)
-        print(data)
+        logging.info(data)
 
 if __name__ == "__main__":
     asyncio.run(main())

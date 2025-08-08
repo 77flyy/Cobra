@@ -23,6 +23,8 @@ try:
 except:
     from .fetch_reserves import fetch_pool_base_price
 
+import logging
+
 def compute_unit_price_from_total_fee(
     total_lams: int,
     compute_units: int = 120_000
@@ -384,12 +386,12 @@ class PumpSwap:
         opts = TxOpts(skip_preflight=True, max_retries=0)
         send_resp = await self.async_client.send_transaction(transaction, opts=opts)
         if debug_prints:
-            print(f"Transaction sent: https://solscan.io/tx/{send_resp.value}")
+            logging.info(f"Transaction sent: https://solscan.io/tx/{send_resp.value}")
 
         # Confirm
         confirmed = await self._await_confirm_transaction(send_resp.value)
         if debug_prints:
-            print("Success:", confirmed)
+            logging.info(f"Success: {confirmed}")
         return (confirmed, str(send_resp.value), pool_type, base_amount_out)
 
     def _build_system_transfer_ix(self, from_pubkey: Pubkey, to_pubkey: Pubkey, lamports: int):
@@ -438,13 +440,13 @@ class PumpSwap:
         user_base_balance_f = await self._fetch_user_token_balance(keypair, str(token_quote))
         if not user_base_balance_f or user_base_balance_f <= 0:
             if debug_prints:
-                print("No base token balance, can't sell.")
+                logging.info("No base token balance, can't sell.")
             return (False, None, pool_type)
         
         to_sell_amount_f = user_base_balance_f * (sell_pct / 100.0)
         if to_sell_amount_f <= 0:
             if debug_prints:
-                print("Nothing to sell after applying percentage.")
+                logging.info("Nothing to sell after applying percentage.")
             return (False, None, pool_type)
 
         if pool_type == NEW_POOL_TYPE:
@@ -452,21 +454,21 @@ class PumpSwap:
             vault_ata, vault_auth = derive_creator_vault(coin_creator, token_quote)
 
         quote_token_in_amount = int(to_sell_amount_f * (10 ** decimals_quote))
-        print(f"quote_token_in_amount: {quote_token_in_amount} | to_sell_amount_f: {to_sell_amount_f}")
+        logging.info(f"quote_token_in_amount: {quote_token_in_amount} | to_sell_amount_f: {to_sell_amount_f}")
         
         base_balance_tokens = pool_data['base_balance_tokens']
         quote_balance_sol   = pool_data['quote_balance_sol']
         
         price = _get_price(base_balance_tokens, quote_balance_sol, reversed=True)
-        print(price)
+        logging.info(price)
         raw_sol = to_sell_amount_f * price
         # we can't apply slippage because we spend all the tokens, so only way is to sell less
         min_sol_out = raw_sol * (1 - slippage_pct/100.0)
         base_amount_out = int(min_sol_out * LAMPORTS_PER_SOL)
-        print(f"base_amount_out: {base_amount_out}")
+        logging.info(f"base_amount_out: {base_amount_out}")
         if base_amount_out <= 0:
             if debug_prints:
-                print("min_quote_amount_out <= 0. Slippage too big or no liquidity.")
+                logging.info("min_quote_amount_out <= 0. Slippage too big or no liquidity.")
             return (False, None, pool_type)
 
         instructions = []
@@ -549,12 +551,12 @@ class PumpSwap:
         opts = TxOpts(skip_preflight=True, max_retries=0)
         send_resp = await self.async_client.send_transaction(transaction, opts=opts)
         if debug_prints:
-            print(f"Transaction sent: https://solscan.io/tx/{send_resp.value}")
+            logging.info(f"Transaction sent: https://solscan.io/tx/{send_resp.value}")
 
         # Confirm
         confirmed = await self._await_confirm_transaction(send_resp.value)
         if debug_prints:
-            print("Success:", confirmed)
+            logging.info(f"Success: {confirmed}")
         return (confirmed, str(send_resp.value), pool_type, base_amount_out)
 
     def _build_old_pumpswap_buy_ix(
@@ -741,13 +743,13 @@ class PumpSwap:
         user_base_balance_f = await self._fetch_user_token_balance(keypair, str(token_base))
         if user_base_balance_f <= 0:
             if debug_prints:
-                print("No base token balance, can't sell.")
+                logging.info("No base token balance, can't sell.")
             return (False, None, pool_type)
         
         to_sell_amount_f = user_base_balance_f * (sell_pct / 100.0)
         if to_sell_amount_f <= 0:
             if debug_prints:
-                print("Nothing to sell after applying percentage.")
+                logging.info("Nothing to sell after applying percentage.")
             return (False, None, pool_type)
 
         if pool_type == NEW_POOL_TYPE:
@@ -767,7 +769,7 @@ class PumpSwap:
         min_quote_amount_out = int(min_sol_out * LAMPORTS_PER_SOL)
         if min_quote_amount_out <= 0:
             if debug_prints:
-                print("min_quote_amount_out <= 0. Slippage too big or no liquidity.")
+                logging.info("min_quote_amount_out <= 0. Slippage too big or no liquidity.")
             return (False, None, pool_type)
         
         instructions = []
@@ -834,11 +836,11 @@ class PumpSwap:
         opts = TxOpts(skip_preflight=True, max_retries=0)
         send_resp = await self.async_client.send_transaction(transaction, opts=opts)
         if debug_prints:
-            print(f"Transaction sent: https://solscan.io/tx/{send_resp.value}")
+            logging.info(f"Transaction sent: https://solscan.io/tx/{send_resp.value}")
         
         confirmed = await self._await_confirm_transaction(send_resp.value)
         if debug_prints:
-            print("Success:", confirmed)
+            logging.info(f"Success: {confirmed}")
         return (confirmed, send_resp.value, pool_type, min_sol_out)
 
     async def reversed_sell(
@@ -878,10 +880,10 @@ class PumpSwap:
             decimals_base, decimals_quote, slippage_pct=slippage_pct,
             reversed=True
         )
-        print(f"base_amount_out: {base_amount_out} | max_quote_amount_in: {max_quote_amount_in}")
+        logging.info(f"base_amount_out: {base_amount_out} | max_quote_amount_in: {max_quote_amount_in}")
         if base_amount_out <= 0:
             if debug_prints:
-                print("base_amount_out <= 0. Slippage too big or no liquidity.")
+                logging.info("base_amount_out <= 0. Slippage too big or no liquidity.")
             return (False, None, pool_type)
 
         instructions = []
@@ -961,11 +963,11 @@ class PumpSwap:
         opts = TxOpts(skip_preflight=True, max_retries=0)
         send_resp = await self.async_client.send_transaction(transaction, opts=opts)
         if debug_prints:
-            print(f"Transaction sent: https://solscan.io/tx/{send_resp.value}")
+            logging.info(f"Transaction sent: https://solscan.io/tx/{send_resp.value}")
         
         confirmed = await self._await_confirm_transaction(send_resp.value)
         if debug_prints:
-            print("Success:", confirmed)
+            logging.info(f"Success: {confirmed}")
         return (confirmed, send_resp.value, pool_type, base_amount_out)
 
 
@@ -1317,12 +1319,12 @@ class PumpSwap:
         )).value
 
         if debug_prints:
-            print(f"Tx submitted: https://solscan.io/tx/{sig}")
+            logging.info(f"Tx submitted: https://solscan.io/tx/{sig}")
 
         ok = await self._await_confirm_transaction(sig)
 
         if debug_prints:
-            print("Success:", ok)
+            logging.info(f"Success: {ok}")
 
         return str(pool_pda) if ok else None
     
@@ -1395,7 +1397,7 @@ class PumpSwap:
         lp_balance_f = await self._fetch_user_token_balance(str(lp_mint))
         if not lp_balance_f or lp_balance_f == 0:
             if debug_prints:
-                print("No LP tokens, nothing to withdraw")
+                logging.info("No LP tokens, nothing to withdraw")
             return False
 
         lp_in_f      = lp_balance_f * withdraw_pct / 100.0
@@ -1462,12 +1464,12 @@ class PumpSwap:
         )).value
 
         if debug_prints:
-            print("Tx:", sig)
+            logging.info(f"Tx: {sig}")
 
         ok  = await self._await_confirm_transaction(sig)
 
         if debug_prints:
-            print("Success:", ok)
+            logging.info(f"Success: {ok}")
 
         return ok
 
@@ -1550,7 +1552,7 @@ class PumpSwap:
                             )).value.amount)
         if base_res_raw == 0 or quote_res_raw == 0:
             if debug_prints:
-                print("Pool reserves are zero – can’t deposit proportionally.")
+                logging.info("Pool reserves are zero – can’t deposit proportionally.")
             return False
 
         quote_needed_lamports = base_in_raw * quote_res_raw // base_res_raw
@@ -1559,7 +1561,7 @@ class PumpSwap:
             cap_lamports = int(sol_cap * LAMPORTS_PER_SOL)
             if quote_needed_lamports > cap_lamports:
                 if debug_prints:
-                    print(
+                    logging.info(
                     f"Deposit aborted: would need {quote_needed_lamports/1e9:.6f} SOL "
                     f"but cap is {sol_cap:.6f} SOL."
                     )
@@ -1583,13 +1585,13 @@ class PumpSwap:
         ) if ui_bal_resp.value else 0
         if have_base_raw < base_in_raw:
             if debug_prints:
-                print("Not enough base tokens in wallet.")
+                logging.info("Not enough base tokens in wallet.")
             return False
         # SOL balance
         sol_balance = (await self.async_client.get_balance(user)).value
         if sol_balance < quote_needed_lamports + int(0.002 * LAMPORTS_PER_SOL):
             if debug_prints:
-                print("Not enough SOL to wrap.")
+                logging.info("Not enough SOL to wrap.")
             return False
 
         ix = [
@@ -1655,10 +1657,10 @@ class PumpSwap:
             tx, opts=TxOpts(skip_preflight=True, max_retries=0)
         )).value
         if debug_prints:
-            print("Tx:", sig)
+            logging.info(f"Tx: {sig}")
         ok  = await self._await_confirm_transaction(sig)
         if debug_prints:
-            print("Success:", ok)
+            logging.info(f"Success: {ok}")
         return ok
 
     @staticmethod
@@ -1680,10 +1682,10 @@ class PumpSwap:
         )
         if debug_prints:
             if sim.value.err:
-                print("── Simulation failed ──────────────────────────────────────────")
+                logging.info("── Simulation failed ──────────────────────────────────────────")
             else:
-                print("── Simulation succeeded ────────────────────────────────────────")
+                logging.info("── Simulation succeeded ────────────────────────────────────────")
             for l in sim.value.logs:
-                print(l)
-            print("────────────────────────────────────────────────────────────────")
+                logging.info(l)
+            logging.info("────────────────────────────────────────────────────────────────")
         return sim.value.err is None

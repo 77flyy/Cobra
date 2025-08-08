@@ -1,7 +1,7 @@
 import traceback
 from dataclasses import dataclass
 from typing import Optional, Tuple
-
+import logging
 from solana.rpc.commitment import Processed, Confirmed
 from solders.pubkey import Pubkey # type: ignore
 from construct import Bytes, Int8ul, Int64ul, Struct as cStruct
@@ -142,7 +142,7 @@ class RaydiumLaunchpadCore:
             )
         except Exception as e:
             traceback.print_exc()
-            print(f"[Launchpad] pool decode failed: {e}")
+            logging.info(f"[Launchpad] pool decode failed: {e}")
             return None
 
     async def get_price(self, pool_addr: str | Pubkey):
@@ -173,7 +173,7 @@ class RaydiumLaunchpadCore:
             ui_b = infos.value[1].data.parsed["info"]["tokenAmount"]["uiAmount"]
             return float(ui_a or 0), float(ui_b or 0)
         except Exception as e:
-            print(f"[Launchpad] Error fetching vault reserves: {e}")
+            logging.info(f"[Launchpad] Error fetching vault reserves: {e}")
             return 0.0, 0.0
 
     @staticmethod

@@ -104,5 +104,5 @@ class CobraRouter:
             await self.swaps.close()
             return True
         except Exception as e:
-            print(f"Error closing CobraRouter: {e}")
+            logging.info(f"Error closing CobraRouter: {e}")
             return False

@@ -18,6 +18,7 @@ from io import BytesIO
 from solders.keypair import Keypair # type: ignore
 import html
 
+
 FAILURE_MSG = "Possible reasons:\n1. Transaction doesn't exist on chain, set higher priority fee.\n2. 'Token Mint constraint violation' error, make sure the token you're trying to swap is paired with WSOL."
 ELLIPSIS = "…"  # U+2026
 RENT_EXEMPT = 2039280
@@ -27,11 +28,13 @@ try:
     from CobraWallets import CobraWallets
     from CobraRouter import CobraRouter 
     from colors import *
+    from CobraNET._helius_api import get_token_info
 except ImportError:
     from .db_hook import TGDBHook
     from ..CobraWallets import CobraWallets
     from ..CobraRouter.CobraRouter import CobraRouter
     from .colors import *
+    from ._helius_api import get_token_info
 
 logging.basicConfig(
     level=logging.INFO,
@@ -456,7 +459,7 @@ class CobraNET:
 
     async def sf_get_token_info(self, mint: str):
         try:
-            info = await self.router.router.get_token_info(mint, self.router.swaps.session)
+            info = await get_token_info(mint, self.router.swaps.session)
             # {"program":str, "name":str, "symbol":str, "supply":str, "decimals":int}
             return info
         except Exception as e:

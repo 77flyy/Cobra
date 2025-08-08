@@ -1,5 +1,5 @@
 from ast import Pass
-import asyncio, aiohttp, logging, json, os, sys, time, collections, httpx, traceback
+import asyncio, aiohttp, logging, json, os, sys, time, collections, httpx, traceback, base64
 from solana.rpc.async_api import AsyncClient
 from solders.keypair import Keypair # type: ignore
 from solders.pubkey import Pubkey # type: ignore
@@ -31,10 +31,10 @@ except:
 from solana.rpc.commitment import Processed
 
 try:
-    from libutils import get_mint_authority, get_token_info, SUPPORTED_DEXES, ADDR_TO_DEX, WSOL_MINT
+    from libutils import SUPPORTED_DEXES, ADDR_TO_DEX, WSOL_MINT
     from libutils.colors import *
 except:
-    from .libutils import get_mint_authority, get_token_info, SUPPORTED_DEXES, ADDR_TO_DEX, WSOL_MINT
+    from .libutils import SUPPORTED_DEXES, ADDR_TO_DEX, WSOL_MINT
     from .libutils.colors import *
 
 async def _check_exists(client: AsyncClient, account: Pubkey) -> bool:
@@ -59,7 +59,75 @@ class Router:
         self.damm_v1 = MeteoraDamm1(async_client=self.async_client)
         self.damm_v2 = MeteoraDamm2(async_client=self.async_client)
         self.dlmm = MeteoraDLMM(async_client=self.async_client)
-        self.get_token_info = get_token_info
+
+    async def get_mint_authority(self, mint: str):
+        """
+        Get mint authority and mint info
+        Returns:
+            tuple: (update_authority, out_info)
+                update_authority: str | None
+                out_info: dict | None
+        """
+        try:
+            mint_pk = Pubkey.from_string(mint) if isinstance(mint, str) else mint
+            mint_resp = await self.async_client.get_account_info_json_parsed(mint_pk, commitment=Processed)
+            if not mint_resp or not mint_resp.value or not mint_resp.value.data:
+                return (None, None)
+
+            parsed = mint_resp.value.data.parsed
+            info = parsed.get('info', {}) if parsed else {}
+            freeze_authority = info.get('freezeAuthority')
+            mint_authority = info.get('mintAuthority')
+            decimals = info.get('decimals')
+            supply = info.get('supply')
+
+            try:
+                METADATA_PROGRAM_ID = Pubkey.from_string("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s")
+                seeds = [b"metadata", bytes(METADATA_PROGRAM_ID), bytes(mint_pk)]
+                metadata_pda, _bump = Pubkey.find_program_address(seeds, METADATA_PROGRAM_ID)
+
+                meta_resp = await self.async_client.get_account_info(metadata_pda, commitment=Processed)
+                update_authority = None
+                if meta_resp and meta_resp.value and meta_resp.value.data:
+                    try:
+                        data_b64 = meta_resp.value.data[0]
+                        data_bytes = base64.b64decode(data_b64)
+                        if len(data_bytes) >= 1 + 32:
+                            ua_bytes = data_bytes[1:33]
+                            try:
+                                ua_pk = Pubkey(ua_bytes)
+                            except Exception:
+                                import base58
+                                ua_b58 = base58.b58encode(ua_bytes).decode()
+                                update_authority = ua_b58
+                            else:
+                                update_authority = str(ua_pk)
+                    except Exception as pe:
+                        logging.debug("Failed to parse metadata account: %s", pe, exc_info=True)
+                        update_authority = None
+                else:
+                    update_authority = None
+            except Exception as me:
+                logging.debug("Metadata PDA/read error: %s", me, exc_info=True)
+                update_authority = None
+
+            out_info = {
+                "info": {
+                    "decimals": decimals,
+                    "freezeAuthority": freeze_authority,
+                    "isInitialized": info.get("isInitialized"),
+                    "mintAuthority": mint_authority,
+                    "supply": supply,
+                },
+                "updateAuthority": update_authority,
+                "mint": str(mint_pk),
+            }
+
+            return (update_authority, out_info)
+        except Exception as e:
+            logging.error(f"Error getting mint authority: {e}")
+            traceback.print_exc()
+            return (None, None)
 
     async def get_decimals(self, mint: str | Pubkey) -> int:
         try:
@@ -69,7 +137,7 @@ class Router:
                 commitment=Processed
             )
             if not mint_info:
-                print("Error: Failed to fetch mint info (tried to fetch token decimals).")
+                logging.info("Error: Failed to fetch mint info (tried to fetch token decimals).")
                 return None
             dec_base = mint_info.value.data.parsed['info']['decimals']
             return int(dec_base)
@@ -90,7 +158,6 @@ class Router:
                 if best_pool["source"] == "pumpswap":
                     return (SUPPORTED_DEXES["PumpSwap"], best_pool["result"][0]["pubkey"])
                 elif best_pool["source"] == "raydium":
-                    print(best_pool["result"])
                     return (SUPPORTED_DEXES["RaydiumAMM"], best_pool["result"])
                 else:
                     raise Exception("route_pump: No pool found")
@@ -174,7 +241,6 @@ class Router:
 
             pool, _ = await self.cpmm_swap.core.find_suitable_pool(mint, pools)
             if pool:
-                print(pool) # debug
                 return (True, pool)
             else:
                 return (False, None)
@@ -188,7 +254,6 @@ class Router:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pool = await self.clmm_swap.core.find_pool_by_mint_with_min_liquidity(mint, min_liquidity=10000)
             if pool:
-                print(pool) # debug
                 return (True, pool)
             else:
                 return (False, None)
@@ -202,7 +267,6 @@ class Router:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pool = await self.raydiumswap_v4.find_pool_by_mint(mint)
             if pool:
-                print(pool) # debug
                 return (True, pool)
             else:
                 return (False, None)
@@ -234,7 +298,6 @@ class Router:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pool = await self.damm_v1.core.find_pool_by_mint(mint)
             if pool:
-                print(pool) # debug
                 return (True, pool)
             else:
                 return (False, None)
@@ -248,7 +311,6 @@ class Router:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pool = await self.damm_v2.core.find_pools_by_mint(mint, limit=50)
             if pool:
-                print(pool) # debug
                 return (True, pool)
             else:
                 return (False, None)
@@ -263,7 +325,6 @@ class Router:
             pools = await self.dlmm.core.find_dlmm_pools_by_mint(mint)
             pool, _, _ = await self.dlmm.core.find_suitable_pool(pools, mint, 0.001, exclude_pools=exclude_pools)
             if pool:
-                print(pool) # debug
                 return (True, pool)
             else:
                 return (False, None)
@@ -275,7 +336,7 @@ class Router:
     async def find_best_market_for_mint(self, mint: str):
         try:
             dex_addr = None
-            authority, info = await get_mint_authority(self.session, mint)
+            authority, info = await self.get_mint_authority(mint)
             if authority is None and info is None:
                 raise Exception("find_best_market_for_mint: Mint not found")
             
@@ -353,7 +414,7 @@ class Router:
         """
         try:
             # 0. authority hint (fast, low RPC cost)
-            authority, info = await get_mint_authority(self.session, mint)
+            authority, info = await self.get_mint_authority(mint)
             if authority == "INVALID":
                 pass
             elif authority is None and info is None:

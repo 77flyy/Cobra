@@ -3,6 +3,7 @@ import struct, asyncio
 from solders.pubkey import Pubkey # type: ignore
 try: from raydium_apiv3 import RaydiumAPI
 except: from .raydium_apiv3 import RaydiumAPI
+import logging
 
 CLMM_PROGRAM_ID = Pubkey.from_string("CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK")
 TICK_ARRAY_SEED = b"tick_array"
@@ -56,7 +57,7 @@ class RaydiumFuckingTicks:
             starts: list[int] = []
             pda_list: list[str] = []
 
-            print(f"\nTickArray PDAs for current_tick = {tick_current}:\n")
+            logging.info(f"\nTickArray PDAs for current_tick = {tick_current}:\n")
 
             # Begin one tick below current, then keep moving up until we have 3 unique arrays
             idx = first_above_idx - 1
@@ -68,7 +69,7 @@ class RaydiumFuckingTicks:
                     starts.append(start)
                     pda = self.derive_tick_array_pda(pool_id, start)
                     pda_list.append(pda)
-                    print(f"tick = {tick:>6} -> startTickIndex = {start:>7} -> PDA = {pda}")
+                    logging.info(f"tick = {tick:>6} -> startTickIndex = {start:>7} -> PDA = {pda}")
 
                 idx += 1
 
@@ -78,7 +79,7 @@ class RaydiumFuckingTicks:
             return pda_list
 
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             return None
         
 
@@ -88,7 +89,7 @@ async def main():
     tick_spacing = 1
     ticks = RaydiumFuckingTicks()
     tick_arrays = await ticks.get_tick_arrays(pool_id, tick_current, tick_spacing)
-    print(tick_arrays)
+    logging.info(tick_arrays)
 
 if __name__ == "__main__":
     asyncio.run(main())

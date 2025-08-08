@@ -8,14 +8,14 @@ try: from .pool import find_pool;
 except: from pool import find_pool;
 try: from .swap  import MeteoraDBCSwap;
 except: from swap  import MeteoraDBCSwap;
-
+import logging
 try:
     from solana.rpc.async_api import AsyncClient
     from solders.keypair import Keypair # type: ignore
     from solders.pubkey import Pubkey # type: ignore
     import traceback
 except Exception as e:
-    print(f"Error, one or more of required modules are missing, install them with pip. {e}")
+    logging.info(f"Error, one or more of required modules are missing, install them with pip. {e}")
 
 class MeteoraDBC:
     def __init__(self, async_client: AsyncClient):
@@ -36,7 +36,7 @@ class MeteoraDBC:
             state["_pubkey"] = pool_addr
             return (pool_addr, state)
         except RuntimeError as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             return None, "NO_ACC"
 
     async def buy(self, mint: str, sol_amount: float, fee_sol: float = 0.00001):
@@ -79,7 +79,7 @@ class MeteoraDBC:
             )
             return sell_tx
         except AssertionError as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             return None
         except Exception as e:
             traceback.print_exc()

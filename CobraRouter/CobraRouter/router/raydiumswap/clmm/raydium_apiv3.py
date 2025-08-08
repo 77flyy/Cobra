@@ -32,10 +32,10 @@ class RaydiumAPI:
             if response.status_code == 200:
                 return response.json()
             else:
-                print(f"Error: {response.status_code} {response.text}")
+                logging.info(f"Error: {response.status_code} {response.text}")
                 return None
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             return None
 
     async def get_list_of_ticks_for_pool(self, pool_id: str):
@@ -55,13 +55,13 @@ class RaydiumAPI:
                                 ticks.append(tick)
                         return ticks
         except Exception as e:
-            print(f"Error: {e}")
+            logging.info(f"Error: {e}")
             return None
 
 async def main():
     raydium = RaydiumAPI()
     ticks = await raydium.get_list_of_ticks_for_pool("8bi27duMu38sFtwTJvDMHFURFNbhPLX91H1NKtReVhZr")
-    print(ticks)
+    logging.info(ticks)
 
 if __name__ == "__main__":
     asyncio.run(main())

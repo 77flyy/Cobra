@@ -8,7 +8,7 @@ from solders.keypair import Keypair # type: ignore
 from solders.message import MessageV0 # type: ignore
 from solana.rpc.types import TokenAccountOpts
 from solana.rpc.commitment import Processed
-
+import logging
 RENT_EXEMPT     = 2039280
 SOL_DECIMALS    = 1e9
 WSOL_MINT       = Pubkey.from_string("So11111111111111111111111111111111111111112")
@@ -50,7 +50,7 @@ class Cleaner:
             )
         blockhash = (await client.get_latest_blockhash()).value.blockhash
         sig = await client.send_transaction(VersionedTransaction(MessageV0.try_compile(payer.pubkey(), tx, [], blockhash), [payer]))
-        print(f"✅ Unwrapped + Closed: {sig}")
+        logging.info(f"✅ Unwrapped + Closed: {sig}")
 
     @staticmethod
     async def close_token_accounts(client: AsyncClient, payer: Keypair, mint: Pubkey | str, to_burn: int = 1, decimals: int = 6):

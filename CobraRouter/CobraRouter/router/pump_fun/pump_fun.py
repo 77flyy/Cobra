@@ -131,7 +131,7 @@ class PumpFun:
             return info.value.owner
         except Exception as e:
             traceback.print_exc()
-            print(f"Failed to get token program id: {e}")
+            logging.info(f"Failed to get token program id: {e}")
             return TOKEN_PROGRAM_ID
 
     async def fetch_pool_state(self, pool: str):

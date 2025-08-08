@@ -15,7 +15,7 @@ from solders.message import MessageV0 # type: ignore
 from spl.token.instructions import create_associated_token_account, initialize_account, InitializeAccountParams, close_account, CloseAccountParams, SyncNativeParams, sync_native
 from solana.rpc.commitment import Processed
 from solders.system_program import CreateAccountWithSeedParams, create_account_with_seed
-
+import logging
 try: from damm2_core import DAMM2Core, SwapParams, DAMM2SwapBuilder, TOKEN_PROGRAM_ID, WSOL_MINT;
 except: from .damm2_core import DAMM2Core, SwapParams, DAMM2SwapBuilder, TOKEN_PROGRAM_ID, WSOL_MINT;
 
@@ -37,7 +37,7 @@ class MeteoraDamm2:
             return info.value.owner
         except Exception as e:
             traceback.print_exc()
-            print(f"Failed to get token program id: {e}")
+            logging.info(f"Failed to get token program id: {e}")
             return TOKEN_PROGRAM_ID
     
     async def normalize_mints(self, mint_a, mint_b):
@@ -49,8 +49,8 @@ class MeteoraDamm2:
     async def build_swap_params(self, state: dict, pool: str | Pubkey, base_mint: str | Pubkey, tokens_in: int, keypair: Keypair, minimum_amount_out: int = 0):
         token_a_program = await self._mint_owner(Pubkey.from_string(state["token_a_mint"]))
         token_b_program = await self._mint_owner(Pubkey.from_string(state["token_b_mint"]))
-        print(f"Token A Program: {token_a_program}")
-        print(f"Token B Program: {token_b_program}")
+        logging.info(f"Token A Program: {token_a_program}")
+        logging.info(f"Token B Program: {token_b_program}")
         swap_params = SwapParams(
             payer=keypair.pubkey(),
             pool=Pubkey.from_string(pool),
@@ -98,7 +98,7 @@ class MeteoraDamm2:
                     commitment=Processed
                 )
                 if not mint_info:
-                    print("Error: Failed to fetch mint info (tried to fetch token decimals).")
+                    logging.info("Error: Failed to fetch mint info (tried to fetch token decimals).")
                     return
                 dec_base = mint_info.value.data.parsed['info']['decimals']
 
@@ -121,7 +121,7 @@ class MeteoraDamm2:
                     raise RuntimeError("sell amount too small")
                 
                 tokens_in = int(sell_amount * 10**dec_base)
-                print(f"Selling {tokens_in} tokens")
+                logging.info(f"Selling {tokens_in} tokens")
 
             elif action == "buy":
                 if tokens_in is None or tokens_in <= 0:
@@ -135,13 +135,13 @@ class MeteoraDamm2:
                 tx = await self.sell(swap_params, keypair=keypair)
             
             result = await self.client.send_transaction(tx, opts=TxOpts(skip_preflight=True, max_retries=0))
-            print(f"Debug DAMM2 | Swap transaction sent: {result.value}")
+            logging.info(f"Debug DAMM2 | Swap transaction sent: {result.value}")
             
             return result.value
             
         except Exception as e:
             traceback.print_exc()
-            print(f"Error in DAMM2 swap: {e}")
+            logging.info(f"Error in DAMM2 swap: {e}")
             return None
     
     async def buy(

@@ -1,4 +1,4 @@
-import traceback
+import traceback, logging
 from solana.rpc.commitment import Processed
 from solders.pubkey import Pubkey # type: ignore
 from decimal import Decimal
@@ -21,20 +21,20 @@ async def async_get_pool_reserves(pool_keys, async_client):
         base_balance = account_base.data.parsed['info']['tokenAmount']['uiAmount']
         
         if quote_balance is None or base_balance is None:
-            print("Error: One of the account balances is None.")
+            logging.info("Error: One of the account balances is None.")
             return None, None
         
         return base_balance, quote_balance
 
     except Exception as exc:
-        print(f"Error fetching pool reserves: {exc}")
+        logging.info(f"Error fetching pool reserves: {exc}")
         traceback.print_exc()
         return None, None
     
 async def fetch_pool_base_price(pool_keys, async_client):
     balance_base, balance_quote = await async_get_pool_reserves(pool_keys, async_client)
     if balance_base is None or balance_quote is None:
-        print("Error: One of the account balances is None.")
+        logging.info("Error: One of the account balances is None.")
         return (None, None, None)
     price = Decimal(balance_quote) / Decimal(balance_base)
     return (price, balance_base, balance_quote)

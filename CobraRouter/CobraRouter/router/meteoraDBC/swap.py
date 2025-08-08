@@ -1,4 +1,5 @@
 # swap.py 
+import logging
 import traceback
 from typing import Optional, Tuple
 import struct
@@ -56,7 +57,7 @@ class MeteoraDBCSwap:
             return info.value.owner
         except Exception as e:
             traceback.print_exc()
-            print(f"Failed to get token program id: {e}")
+            logging.info(f"Failed to get token program id: {e}")
             return TOKEN_PROGRAM
 
     async def mint_of_token_account(self, ata_or_vault: str) -> Pubkey:
@@ -230,7 +231,7 @@ class MeteoraDBCSwap:
         tx = VersionedTransaction(msg, [keypair])
         opts = TxOpts(skip_preflight=True, max_retries=0)
         sig = await self.client.send_transaction(tx, opts=opts)
-        print("sent tx:", sig.value)
+        logging.info(f"sent tx: {sig.value}")
         return sig.value
 
     async def sell(
@@ -314,7 +315,7 @@ class MeteoraDBCSwap:
         )
         tx  = VersionedTransaction(msg, [keypair])
         sig = await self.client.send_transaction(tx, opts=TxOpts(skip_preflight=True))
-        print("sent sell tx:", sig.value)
+        logging.info(f"sent tx: {sig.value}")
         return sig.value
 
 __all__ = ["MeteoraDBCSwap"]

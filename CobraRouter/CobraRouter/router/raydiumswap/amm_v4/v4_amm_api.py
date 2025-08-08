@@ -1,4 +1,5 @@
 import requests
+import logging
 
 def fetch_pool_info(mint: str):
     url = "https://api-v3.raydium.io/pools/info/mint"
@@ -17,5 +18,5 @@ def fetch_pool_info(mint: str):
             return None
         return response.json()
     except Exception as e:
-        print(e)
+        logging.info(e)
         return None

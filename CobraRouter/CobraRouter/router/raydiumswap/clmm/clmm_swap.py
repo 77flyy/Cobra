@@ -25,7 +25,7 @@ try: from .clmm_core import ClmmCore, CLMM_PROGRAM_ID, WSOL_MINT, TOKEN_PROGRAM_
 except: from clmm_core import ClmmCore, CLMM_PROGRAM_ID, WSOL_MINT, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID;
 try: from .ticks import RaydiumFuckingTicks;
 except: from ticks import RaydiumFuckingTicks;
-
+import logging
 RENT_EXEMPT   = 5039280
 ACCOUNT_SIZE  = 165
 SOL_DECIMALS  = 1e9
@@ -51,7 +51,7 @@ class RaydiumClmmSwap:
             token_reserve, sol_reserve = await self.core.async_get_pool_reserves(pool_keys)
             
             if token_reserve <= 0 or sol_reserve <= 0:
-                print("Warning: Invalid reserves, using fallback")
+                logging.info("Warning: Invalid reserves, using fallback")
                 return amount_in // 10000
             
             if input_mint == pool_keys.mint_b:
@@ -70,7 +70,7 @@ class RaydiumClmmSwap:
                 return int(final_tokens_out * 1e6)
                 
         except Exception as e:
-            print(f"Error in CLMM estimation: {e}")
+            logging.info(f"Error in CLMM estimation: {e}")
             traceback.print_exc()
             return None
 
@@ -83,7 +83,7 @@ class RaydiumClmmSwap:
             token_reserve, sol_reserve = await self.core.async_get_pool_reserves(pool_keys)
             
             if token_reserve <= 0 or sol_reserve <= 0:
-                print("Warning: Invalid reserves, using minimal fallback")
+                logging.info("Warning: Invalid reserves, using minimal fallback")
                 return max(amount_in // 10000, 1)
             
             if input_mint == pool_keys.mint_b: # Selling token for SOL
@@ -92,17 +92,17 @@ class RaydiumClmmSwap:
                 active_sol_liquidity = sol_reserve * 0.001
                 
                 if amount_in_ui > active_token_liquidity * 0.01:
-                    print("Warning: Trade too large for active liquidity, using minimal output")
+                    logging.info("Warning: Trade too large for active liquidity, using minimal output")
                     return max(amount_in // 50000, 1)
                 
                 conservative_rate = min(amount_in_ui * 0.0001, 0.001)
-                print(f"Debug: Ultra-conservative estimated SOL out: {conservative_rate}")
+                logging.info(f"Debug: Ultra-conservative estimated SOL out: {conservative_rate}")
                 
                 return max(int(conservative_rate * 1e9), 1000)
                 
             else:
                 amount_in_sol = amount_in / 1e9
-                print(f"Debug: Selling {amount_in_sol} SOL")
+                logging.info(f"Debug: Selling {amount_in_sol} SOL")
                 
                 active_token_liquidity = token_reserve * 0.001
                 active_sol_liquidity = sol_reserve * 0.001
@@ -111,12 +111,12 @@ class RaydiumClmmSwap:
                     return max(amount_in // 50000, 1)
                 
                 conservative_tokens = min(amount_in_sol * 1000, 1.0)
-                print(f"Debug: Ultra-conservative estimated tokens out: {conservative_tokens}")
+                logging.info(f"Debug: Ultra-conservative estimated tokens out: {conservative_tokens}")
                 
                 return max(int(conservative_tokens * (10 ** token_decimals)), 1)
                 
         except Exception as e:
-            print(f"Error in CLMM estimation with decimals: {e}")
+            logging.info(f"Error in CLMM estimation with decimals: {e}")
             return max(amount_in // 100000, 1)
 
     @staticmethod
@@ -229,7 +229,7 @@ class RaydiumClmmSwap:
         extra_accounts.append(pda_ex_bitmap)
 
         tick_spacing, tick_current = await self.core.async_fetch_pool_tickinfo(pool_id)
-        print(f"Tick spacing: {tick_spacing}, Tick current: {tick_current}")
+        logging.info(f"Tick spacing: {tick_spacing}, Tick current: {tick_current}")
 
         tick_arrays = await self.ticks.get_tick_arrays(pool_id, tick_current, tick_spacing)
         for tick_array in tick_arrays:
@@ -283,7 +283,7 @@ class RaydiumClmmSwap:
             VersionedTransaction(msg, [keypair]),
             opts=TxOpts(skip_preflight=True, max_retries=0),
         )
-        print(sig)
+        logging.info(sig)
         ok = await self._await_confirm(sig.value)
         return ok, sig.value
 
@@ -320,7 +320,7 @@ class RaydiumClmmSwap:
             commitment=Processed
         )
         if not mint_info:
-            print("Error: Failed to fetch mint info (tried to fetch token decimals).")
+            logging.info("Error: Failed to fetch mint info (tried to fetch token decimals).")
             return
         dec_base = mint_info.value.data.parsed['info']['decimals']
 
@@ -334,11 +334,11 @@ class RaydiumClmmSwap:
         estimated_out_lamports = await self.estimate_clmm_output_with_decimals(
             keys, keys.mint_b, lamports_in, dec_base
         )
-        print(f"CLMM estimated output (lamports): {estimated_out_lamports}")
+        logging.info(f"CLMM estimated output (lamports): {estimated_out_lamports}")
         expected_sol = estimated_out_lamports / SOL_DECIMALS
         min_lam_out = int(expected_sol * (1 - slippage_pct/100) * SOL_DECIMALS)
 
-        print(f"Expected SOL: {expected_sol}, Min LAM: {min_lam_out}")
+        logging.info(f"Expected SOL: {expected_sol}, Min LAM: {min_lam_out}")
         extra_accounts: list[Pubkey] = [self.core._derive_ex_bitmap(keys.id)]
 
         tick_spacing, tick_current = await self.core.async_fetch_pool_tickinfo(pool_id)

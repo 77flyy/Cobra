@@ -20,6 +20,7 @@ from spl.token.instructions import (
     initialize_account,
     CloseAccountParams, close_account, InitializeAccountParams
 )
+import logging
 
 try: from cpmm_core import RaydiumCpmmCore, WSOL_MINT
 except: from .cpmm_core import RaydiumCpmmCore, WSOL_MINT
@@ -43,7 +44,7 @@ class RaydiumCpmmSwap:
             return info.value.owner
         except Exception as e:
             traceback.print_exc()
-            print(f"Failed to get token program id: {e}")
+            logging.info(f"Failed to get token program id: {e}")
             return TOKEN_PROGRAM
 
     @staticmethod
@@ -197,7 +198,7 @@ class RaydiumCpmmSwap:
             VersionedTransaction(msg, [keypair]),
             opts = TxOpts(skip_preflight=True, max_retries=0),
         )
-        print(sig)
+        logging.info(sig)
         ok = await self._await_confirm(sig.value)
         return ok, sig.value
 
@@ -329,7 +330,7 @@ class RaydiumCpmmSwap:
             VersionedTransaction(msg, [keypair]),
             opts=TxOpts(skip_preflight=True, max_retries=0),
         )
-        print(sig)
+        logging.info(sig)
         ok = await self._await_confirm(sig.value)
         return ok, sig.value
 

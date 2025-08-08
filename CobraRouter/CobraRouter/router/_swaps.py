@@ -48,7 +48,7 @@ class CobraSwaps:
             return info.value.owner
         except Exception as e:
             traceback.print_exc()
-            print(f"Failed to get token program id: {e}")
+            logging.info(f"Failed to get token program id: {e}")
             return TOKEN_PROGRAM_ID
 
     async def get_balance(self, mint: str | Pubkey, pubkey: str | Pubkey):
@@ -90,7 +90,7 @@ class CobraSwaps:
                     balances[str(mint)] = float(amount)
             return balances
         except Exception as e:
-            print(f"Error fetching vault reserves: {e}")
+            logging.info(f"Error fetching vault reserves: {e}")
             traceback.print_exc()
             return {}
 

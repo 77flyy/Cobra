@@ -3,7 +3,13 @@
 ## Cobra: Buy, sell, search pools, and more on all Raydium, Pump.fun, and Meteora AMMs.
 
 **Overview:**
-**Cobra** is an **off-chain DeX router on Solana** that allows users to grind custom vanity keys, find markets for mints, locate pools with sufficient liquidity, and perform swaps across various supported markets.
+[**Cobra**](https://github.com/FLOCK4H/Cobra) is a personal **off-chain DeX router for Solana** 
+
+Installing it allows you to grind custom vanity keys, find markets for mints, locate pools with sufficient liquidity, and perform swaps across various supported markets - all using either a built-in CLI application, or via code. Imagine a swiss kinfe for DeFi on Solana. Cobra is designed to be a versatile tool for traders and developers alike. 
+
+!!! note
+    Cobra is not a wallet, it does not hold your funds. It is a tool to interact with DeFi protocols on Solana. Whole project runs directly on your machine, the speed of routing, sending transactions, and other interfaces depends only on your RPC Node, and/or your machine.
+ 
 
 ## Supported Markets
 
