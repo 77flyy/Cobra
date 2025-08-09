@@ -148,8 +148,6 @@ HELIUS_API_KEY="your-helius-free-or-not-api-key"
 
 For database operations you will need PostgreSQL installed: [PostgreSQL](https://www.postgresql.org/download)
 
-Learn more about CobraNET here: [Cobra Documentation](https://flock4h.github.io/Cobra/markets/cobranet)
-
 Initialize the database:
 
 ```
@@ -165,6 +163,7 @@ Test your bot by entering `/start` inside the conversation.
 
 <img width="528" height="757" alt="image" src="https://github.com/user-attachments/assets/8af7dd6b-cc97-4ee1-9ed3-6abd5a13c163" />
 
+Learn more about CobraNET here: [Cobra Documentation](https://flock4h.github.io/Cobra/markets/cobranet)
 
 ## Contact & Support
 
