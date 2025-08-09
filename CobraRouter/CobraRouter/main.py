@@ -40,6 +40,14 @@ class CobraRouter:
         self.warmed_up = False # warming up RPC cache to avoid cold-start overhead
 
     async def list_mints(self, pubkey: str | Pubkey) -> list[str]:
+        """
+        List all mints owned by a given address.
+
+        Args:
+            pubkey: str | Pubkey
+        Returns:
+            list[str]: list of mint addresses
+        """
         try:
             owner = Pubkey.from_string(pubkey) if isinstance(pubkey, str) else pubkey
 
@@ -88,6 +96,9 @@ class CobraRouter:
             return []
 
     async def ping(self) -> bool:
+        """
+        Ping the RPC to warm up the cache.
+        """
         try:
             resp = await self.async_client.get_latest_blockhash()
             if resp is None:
@@ -101,6 +112,7 @@ class CobraRouter:
 
     async def get_priority_fee(self, msg: VersionedMessage | None = None):
         """
+        Get priority fee levels.
             Args:
                 msg: VersionedMessage | None
             Returns:
@@ -120,6 +132,9 @@ class CobraRouter:
         return await self.swaps.priority_fee_levels(msg)
 
     async def get_decimals(self, mint: str | Pubkey):
+        """
+        Get decimals of a mint.
+        """
         try:
             decimals = await self.router.get_decimals(mint)
             return decimals
@@ -128,6 +143,9 @@ class CobraRouter:
             return None
 
     async def get_price(self, mint: str, **kwargs):
+        """
+        Get price of a mint.
+        """
         try:
             dex, pool = await self.detect(mint, **kwargs)
             if not dex or not pool:
@@ -178,6 +196,9 @@ class CobraRouter:
             raise ValueError(f"Invalid action: {action}")
 
     async def close(self):
+        """
+        Close the CobraRouter.
+        """
         try:
             cprint(f"Closing CobraRouter...")
             await self.router.close()

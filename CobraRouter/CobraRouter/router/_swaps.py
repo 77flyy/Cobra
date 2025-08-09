@@ -41,6 +41,9 @@ class CobraSwaps:
         self.rpc_url = rpc_url
 
     async def _mint_owner(self, mint: Pubkey) -> Pubkey:
+        """
+        Get the token program id of a mint.
+        """
         try:
             info = await self.ctx.get_account_info(mint, commitment=Confirmed)
             if info.value is None:
@@ -52,6 +55,14 @@ class CobraSwaps:
             return TOKEN_PROGRAM_ID
 
     async def get_balance(self, mint: str | Pubkey, pubkey: str | Pubkey):
+        """
+        Get the balance of a mint. Pass in the mint address and the pubkey of the account you want to check the balance of.
+        Args:
+            mint: str | Pubkey
+            pubkey: str | Pubkey
+        Returns:
+            tuple: (token_balance, token_balance_raw, "success" | "account_not_found" | "account_empty")
+        """
         pubkey = Pubkey.from_string(pubkey) if isinstance(pubkey, str) else pubkey
         token_pk = Pubkey.from_string(mint) if isinstance(mint, str) else mint
 
@@ -77,6 +88,9 @@ class CobraSwaps:
         return (token_balance, token_balance_raw, "success")
 
     async def get_multiple_balances(self, mints: list[str | Pubkey], pubkey: str | Pubkey):
+        """
+        Get the balance of multiple mints.
+        """
         pubkey = Pubkey.from_string(pubkey) if isinstance(pubkey, str) else pubkey
         mints = [Pubkey.from_string(m) if isinstance(m, str) else m for m in mints]
         atas = [get_associated_token_address(pubkey, m, token_program_id=await self._mint_owner(m)) for m in mints]
@@ -174,6 +188,15 @@ class CobraSwaps:
         }
 
     async def get_price(self, mint: str | Pubkey, pool: str | Pubkey, dex: str):
+        """
+        Get the price of a mint.
+        Args:
+            mint: str | Pubkey
+            pool: str | Pubkey
+            dex: str
+        Returns:
+            float: price
+        """
         if dex == SUPPORTED_DEXES["MeteoraDamm1"]:
             price = await self.router.damm_v1.core.get_price(mint, pool_addr=pool)
         elif dex == SUPPORTED_DEXES["MeteoraDamm2"]:
@@ -216,6 +239,21 @@ class CobraSwaps:
         dex: str = SUPPORTED_DEXES["RaydiumAMM"],
         **kwargs
     ):
+        """
+        Buy a mint. Remember to pass the dex you want to use, and the pool you want to buy from.
+
+        Args:
+            mint: str | Pubkey
+            pool: str | Pubkey
+            keypair: Keypair
+            sol_amount: float
+            slippage: float = 10
+            priority_fee_level: str = "medium"
+            dex: str = SUPPORTED_DEXES["RaydiumAMM"]
+            **kwargs
+        Returns:
+            tuple: (tx_hash, success)
+        """
         try:
             return_instructions = kwargs.get("return_instructions", False) == True
 
@@ -344,15 +382,21 @@ class CobraSwaps:
             return (None, False)
 
     def _build_system_transfer_ix(self, from_pubkey: Pubkey, to_pubkey: Pubkey, lamports: int):
-            return transfer(
-                TransferParams(
-                    from_pubkey=from_pubkey,
-                    to_pubkey=to_pubkey,
-                    lamports=lamports
-                )
+        """
+        Build a system transfer instruction.
+        """
+        return transfer(
+            TransferParams(
+                from_pubkey=from_pubkey,
+                to_pubkey=to_pubkey,
+                lamports=lamports
             )
+        )
 
     async def _build_token_transfer_ix(self, from_pubkey: Pubkey, to_pubkey: Pubkey, mint: Pubkey, amount: int, decimals: int):
+        """
+        Build a token transfer instruction.
+        """
         program_id = await self._mint_owner(mint)
         mint_ata = get_associated_token_address(from_pubkey, mint, program_id)
         return transfer_checked(
@@ -369,6 +413,9 @@ class CobraSwaps:
         )
 
     async def send_transfer(self, keypair: Keypair, mint: str | Pubkey, amount: float, to: str | Pubkey, priority_fee_level: str = "medium", return_instructions: bool = False):
+        """
+        Send a transfer of a mint.
+        """
         ixs = []
         blockhash = (await self.ctx.get_latest_blockhash()).value.blockhash
         mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
@@ -440,6 +487,9 @@ class CobraSwaps:
         return (None, False)
 
     async def _await_confirm(self, sig, tries=3, delay=2):
+        """
+        Await a transaction to be confirmed.
+        """
         for _ in range(tries):
             res = await self.ctx.get_transaction(sig, commitment=Confirmed, max_supported_transaction_version=0)
             if res.value and res.value.transaction.meta.err is None:
@@ -465,6 +515,7 @@ class CobraSwaps:
             Args:
                 mint: Token mint address to sell
                 pool: Pool address for the token
+                keypair: Keypair
                 sell_pct: Percentage of token balance to sell (0-100)
                 slippage: Slippage tolerance (0.01 = 1%)
                 priority_fee_level: Priority fee level ("low", "medium", "high")

@@ -42,7 +42,6 @@ BMBcZ9GWMCi9HaCE7BagrLxakzffy6fAGdEpihLRfVPw
 RUN_AS_CLI=True
 BOT_TOKEN=
 HTTP_RPC="https://api.apewise.org/rpc?api-key="
-HELIUS_API_KEY="your-helius-free-or-not-api-key"
 
 # CLI CONFIG SECTION
 PRIVATE_KEY=2wY3abcde5Pj4xxxxxxxxxxxxxxxxxxxxxxxxxxxx

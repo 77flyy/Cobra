@@ -51,3 +51,18 @@ nav:
   - First steps:
       - Installation: first/installation.md
       - Quick start: first/quickstart.md
+  - Cobra:
+      - CobraRouter: markets/cobrarouter.md
+      - PumpFun: markets/pumpfun.md
+      - PumpSwapAMM: markets/pumpswapamm.md
+      - MeteoraDAMM1: markets/meteoradamm1.md
+      - MeteoraDAMM2: markets/meteoradamm2.md
+      - MeteoraDLMM: markets/meteoradlmm.md
+      - Meteora DBC: markets/meteoradbc.md
+      - RaydiumAMMV4: markets/raydiumammv4.md
+      - RaydiumCLMM: markets/raydiumclmm.md
+      - RaydiumDLMM: markets/raydiumdlmm.md
+      - Raydium Launchpad: markets/raydiumlaunchpad.md
+      - CobraNET: markets/cobranet.md
+      - CobraWallets: markets/cobrawallets.md
+    

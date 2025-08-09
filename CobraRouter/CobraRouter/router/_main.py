@@ -131,6 +131,9 @@ class Router:
             return (None, None)
 
     async def get_decimals(self, mint: str | Pubkey) -> int:
+        """
+        Get the decimals of a mint.
+        """
         try:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             mint_info = await self.async_client.get_account_info_json_parsed(
@@ -148,6 +151,13 @@ class Router:
             return None
 
     async def check_route_pump(self, mint: str):
+        """
+        Check if a mint is a PumpFun mint.
+        Args:
+            mint: str
+        Returns:
+            tuple: (dex, pool)
+        """
         try:
             bc = get_associated_bonding_curve_address(Pubkey.from_string(mint))[0]
             if not await _check_exists(self.async_client, bc):
@@ -170,6 +180,13 @@ class Router:
             return (None, None)
         
     async def check_route_pumpswap(self, mint: str):
+        """
+        Check if a mint is a PumpSwap mint.
+        Args:
+            mint: str
+        Returns:
+            tuple: (dex, pool)
+        """
         try:
             pool1, pool2 = None, None
             pool1 = await find_pumpswap_pools(
@@ -195,6 +212,13 @@ class Router:
             return (None, None)
 
     async def check_route_launchpad(self, mint: str):
+        """
+        Check if a mint is a Launchpad mint.
+        Args:
+            mint: str
+        Returns:
+            tuple: (dex, pool)
+        """
         try:
             pool = await self.launchlab_swap.core.find_launchpad_pool_by_mint(mint)
             if pool:
@@ -215,6 +239,13 @@ class Router:
             return (None, None)
         
     async def check_route_believe(self, mint: str):
+        """
+        Check if a mint is a Believe mint.
+        Args:
+            mint: str
+        Returns:
+            tuple: (dex, pool)
+        """
         try:
             pool, state = await self.meteora_dbc.fetch_state(mint)
             if pool:
@@ -234,6 +265,13 @@ class Router:
             return (None, None)
         
     async def check_ray_cpmm_for_mint(self, mint: str | Pubkey):
+        """
+        Check if a mint is a RaydiumCPMM mint.
+        Args:
+            mint: str | Pubkey
+        Returns:
+            tuple: (bool, pool)
+        """
         try:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pools = await self.cpmm_swap.core.find_cpmm_pools_by_mint(mint, limit=500)
@@ -251,6 +289,13 @@ class Router:
             return (False, None)
         
     async def check_ray_clmm_for_mint(self, mint: str | Pubkey):
+        """
+        Check if a mint is a RaydiumCLMM mint.
+        Args:
+            mint: str | Pubkey
+        Returns:
+            tuple: (bool, pool)
+        """
         try:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pool = await self.clmm_swap.core.find_pool_by_mint_with_min_liquidity(mint, min_liquidity=10000)
@@ -264,6 +309,13 @@ class Router:
             return (False, None)
         
     async def check_ray_v4_for_mint(self, mint: str | Pubkey):
+        """
+        Check if a mint is a RaydiumV4 mint.
+        Args:
+            mint: str | Pubkey
+        Returns:
+            tuple: (bool, pool)
+        """
         try:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pool = await self.raydiumswap_v4.find_pool_by_mint(mint)
@@ -277,6 +329,13 @@ class Router:
             return (False, None)
         
     async def check_dbc_for_mint(self, mint: str | Pubkey):
+        """
+        Check if a mint is a MeteoraDBC mint.
+        Args:
+            mint: str | Pubkey
+        Returns:
+            tuple: (bool, pool)
+        """
         try:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pool, state = await self.meteora_dbc.fetch_state(mint)
@@ -295,6 +354,13 @@ class Router:
             return (False, None)
 
     async def check_damm_v1_for_mint(self, mint: str | Pubkey):
+        """
+        Check if a mint is a MeteoraDAMM1 mint.
+        Args:
+            mint: str | Pubkey
+        Returns:
+            tuple: (bool, pool)
+        """
         try:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pool = await self.damm_v1.core.find_pool_by_mint(mint)
@@ -308,6 +374,13 @@ class Router:
             return (False, None)
         
     async def check_damm_v2_for_mint(self, mint: str | Pubkey):
+        """
+        Check if a mint is a MeteoraDAMM2 mint.
+        Args:
+            mint: str | Pubkey
+        Returns:
+            tuple: (bool, pool)
+        """
         try:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pool = await self.damm_v2.core.find_pools_by_mint(mint, limit=50)
@@ -321,6 +394,14 @@ class Router:
             return (False, None)
         
     async def check_dlmm_for_mint(self, mint: str | Pubkey, exclude_pools: list[str] = []):
+        """
+        Check if a mint is a MeteoraDLMM mint.
+        Args:
+            mint: str | Pubkey
+            exclude_pools: list[str]
+        Returns:
+            tuple: (bool, pool)
+        """
         try:
             mint = Pubkey.from_string(mint) if isinstance(mint, str) else mint
             pools = await self.dlmm.core.find_dlmm_pools_by_mint(mint)
@@ -335,6 +416,13 @@ class Router:
             return (False, None)
 
     async def find_best_market_for_mint(self, mint: str):
+        """
+        Find the best market for a mint.
+        Args:
+            mint: str
+        Returns:
+            tuple: (dex, pool)
+        """
         try:
             dex_addr = None
             authority, info = await self.get_mint_authority(mint)
@@ -546,6 +634,9 @@ class Router:
             return (None, None)
 
     async def close(self):
+        """
+        Close the router.
+        """
         try:
             await self.pump_fun.close()
             await self.raydiumswap.close()
