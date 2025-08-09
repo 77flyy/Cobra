@@ -9,7 +9,7 @@
 
 # Cobra
 
-Read the **[Cobra Documentation](https://flock4h.github.io/Cobra)**
+### Read the **[Cobra Documentation](https://flock4h.github.io/Cobra)**
 
 **Supported Solana Markets:**
 
@@ -132,7 +132,7 @@ PRIORITY_FEE_LEVEL="high" # "low", "medium", "high", "turbo"
 
 # CobraNET
 
-CobraNET is a Telegram wrapper around the CobraRouter and CobraWallets, and allows you to host your own Dex Router via Telegram Bot.
+CobraNET is an optional Telegram wrapper around the CobraRouter and CobraWallets, and allows you to host your own Dex Router via Telegram Bot.
 
 ## Setup
 
@@ -147,6 +147,8 @@ HELIUS_API_KEY="your-helius-free-or-not-api-key"
 ```
 
 For database operations you will need PostgreSQL installed: [PostgreSQL](https://www.postgresql.org/download)
+
+Learn more about CobraNET here: [Cobra Documentation](https://flock4h.github.io/Cobra/markets/cobranet)
 
 Initialize the database:
 
