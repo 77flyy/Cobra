@@ -10,3 +10,4 @@ readchar
 dotenv
 python-telegram-bot
 asyncpg
+borsh_construct
