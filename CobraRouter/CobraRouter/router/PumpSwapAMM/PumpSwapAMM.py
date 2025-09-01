@@ -43,6 +43,8 @@ ASSOCIATED_TOKEN    = Pubkey.from_string("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsL
 SYSTEM_PROGRAM_ID   = Pubkey.from_string("11111111111111111111111111111111")
 EVENT_AUTHORITY     = Pubkey.from_string("GS4CU59F31iL7aR2Q8zVS8DRrcRnXX1yjQ66TqNVQnaR")
 GLOBAL_VOLUME_ACCUMULATOR = Pubkey.from_string("C2aFPdENg4A2HQsmrd5rTw5TaYBX5Ku887cWjbFKtZpw")
+FEE_CONFIG = Pubkey.from_string("5PHirr8joyTMp9JMm6nW7hNDVyEYdkzDqazxPD7RaTjx")
+FEE_PROGRAM = Pubkey.from_string("pfeeUxB6jkeY1Hxd7CsFCAjcbHA9rWtchMGdZ6VojVZ")
 
 GLOBAL_CONFIG_PUB   = Pubkey.from_string("ADyA8hdefvWN2dbGGWFotbzWxrAvLW83WG6QCVXvJKqw")
 PROTOCOL_FEE_RECIP  = Pubkey.from_string("7VtfL8fvgNfhz17qKRMjzQEXgbdpnHHHQRh54R9jP2RJ")
@@ -704,6 +706,8 @@ class PumpSwap:
             AccountMeta(pubkey=SPubkey.from_string(str(vault_auth)), is_signer=False, is_writable=True),
             AccountMeta(pubkey=SPubkey.from_string(str(GLOBAL_VOLUME_ACCUMULATOR)), is_signer=False, is_writable=True),
             AccountMeta(pubkey=SPubkey.from_string(str(self._derive_uva_pda(user_pubkey))), is_signer=False, is_writable=True),
+            AccountMeta(pubkey=SPubkey.from_string(str(FEE_CONFIG)), is_signer=False, is_writable=False),
+            AccountMeta(pubkey=SPubkey.from_string(str(FEE_PROGRAM)), is_signer=False, is_writable=False),
         ]
 
         ix = Instruction(
@@ -1033,6 +1037,8 @@ class PumpSwap:
             AccountMeta(pubkey=SPubkey.from_string(str(PUMPSWAP_PROGRAM_ID)), is_signer=False, is_writable=False),
             AccountMeta(pubkey=SPubkey.from_string(str(vault_ata)), is_signer=False, is_writable=True),
             AccountMeta(pubkey=SPubkey.from_string(str(vault_auth)), is_signer=False, is_writable=True),
+            AccountMeta(pubkey=SPubkey.from_string(str(FEE_CONFIG)), is_signer=False, is_writable=False),
+            AccountMeta(pubkey=SPubkey.from_string(str(FEE_PROGRAM)), is_signer=False, is_writable=False),
         ]
 
         return Instruction(
